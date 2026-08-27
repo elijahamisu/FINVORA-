@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Earnings | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        /* Container */
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+
+        /* Summary Card */
+        .summary-card { background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); text-align: center; padding: 30px 20px; }
+        .summary-label { font-size: 0.8rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1.5px; }
+        .summary-amount { font-size: 2.2rem; font-weight: 700; color: var(--gold-primary); margin: 10px 0; }
+        .today-box { display: inline-block; background: rgba(212, 175, 55, 0.1); padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--gold-primary); }
+
+        /* Progress Card */
+        .progress-item { margin-top: 15px; }
+        .progress-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
+        .progress-bar-bg { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--gold-gradient); width: 0%; transition: width 1s ease-out; }
+        .progress-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; font-size: 0.75rem; color: var(--text-gray); }
+
+        /* List Items */
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold-primary); margin: 25px 0 15px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-item:last-child { border-bottom: none; }
+        .hist-info h4 { font-size: 0.9rem; font-weight: 600; }
+        .hist-info p { font-size: 0.75rem; color: var(--text-gray); }
+        .hist-amt { font-weight: 700; color: var(--gold-primary); }
+
+        /* Quick Actions Grid */
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+        .action-item { background: var(--glass); padding: 15px 5px; border-radius: 12px; text-align: center; text-decoration: none; border: 1px solid transparent; }
+        .action-item:active { border-color: var(--gold-primary); }
+        .action-icon { font-size: 1.4rem; display: block; margin-bottom: 5px; }
+        .action-label { font-size: 0.65rem; color: var(--text-white); font-weight: 500; }
+
+        /* Navigation Drawer */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 80%; max-width: 300px; height: 100vh; background: var(--bg-navy); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-weight: 500; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+
+        /* Desktop Adjustments */
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; height: 100vh; }
+            .overlay, header { display: none; }
+            .main-content { flex: 1; margin-left: 0; }
+            .earnings-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="investment.html" class="nav-link">Invest Now</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link active">Earnings</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: #ff4d4d; margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                
+                <div class="earnings-layout">
+                    <div>
+                        <!-- Summary -->
+                        <div class="card summary-card">
+                            <span class="summary-label">Total Accumulated Earnings</span>
+                            <h1 class="summary-amount" id="totalEarned">₦0.00</h1>
+                            <div class="today-box">Today: <span id="todayEarned">₦0.00</span></div>
+                        </div>
+
+                        <!-- Quick Grid -->
+                        <div class="action-grid">
+                            <a href="investment.html" class="action-item"><span class="action-icon">📈</span><span class="action-label">Invest</span></a>
+                            <a href="wallet.html" class="action-item"><span class="action-icon">💳</span><span class="action-label">Wallet</span></a>
+                            <a href="withdraw.html" class="action-item"><span class="action-icon">🏦</span><span class="action-label">Withdraw</span></a>
+                            <a href="gift-code.html" class="action-item" style="border-color: var(--gold-primary);"><span class="action-icon">🎁</span><span class="action-label">Gift Code</span></a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Active Performance -->
+                        <h2 class="section-title">Investment Progress</h2>
+                        <div id="progressContainer">
+                            <p class="summary-label" style="text-align: center; padding: 20px;">Loading performance...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <h2 class="section-title">Earnings History</h2>
+                <div class="card">
+                    <div id="historyList">
+                        <p class="summary-label" style="text-align: center; padding: 20px;">Loading history...</p>
+                    </div>
+                </div>
+
+                <!-- Promo -->
+                <div class="card" style="background: rgba(212, 175, 55, 0.05); text-align: center; border-style: dashed;">
+                    <p class="summary-label" style="margin-bottom: 10px;">Have a gift code?</p>
+                    <a href="gift-code.html" class="btn-invest" style="color: var(--gold-primary); text-decoration: none; font-weight: 700; font-size: 0.9rem;">Redeem Reward</a>
+                </div>
+
+                <!-- Info -->
+                <div style="margin-top: 40px; font-size: 0.8rem; color: var(--text-gray); line-height: 1.6;">
+                    <h4 style="color: var(--gold-primary); margin-bottom: 10px;">How Earnings Work</h4>
+                    <p>Earnings are automatically recorded according to your active investment plan. Each cycle lasts 20 days. You can track your daily progress and accumulated returns here.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+        import { formatCurrency } from './src/utils/format.js';
+
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Navigation
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        menuToggle?.addEventListener('click', toggleMenu);
+        overlay?.addEventListener('click', toggleMenu);
+        logoutBtn?.addEventListener('click', async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; });
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+            const user = session.user;
+
+            try {
+                // 1. Fetch Profile for totals
+                const { data: profile } = await supabase.from('profiles').select('total_earnings').eq('id', user.id).single();
+                if (profile) document.getElementById('totalEarned').textContent = formatCurrency(profile.total_earnings);
+
+                // 2. Fetch Active Investments
+                const { data: investments } = await supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active');
+                renderProgress(investments);
+
+                // 3. Fetch History (Transactions type 'earning')
+                const { data: history } = await supabase.from('transactions').select('*').eq('user_id', user.id).eq('type', 'earning').order('created_at', { ascending: false }).limit(10);
+                renderHistory(history);
+
+                // Calculate Today's (Filter history for today)
+                const today = new Date().toDateString();
+                const todayVal = history?.filter(h => new Date(h.created_at).toDateString() === today).reduce((acc, curr) => acc + curr.amount, 0);
+                document.getElementById('todayEarned').textContent = formatCurrency(todayVal || 0);
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderProgress(items) {
+            const container = document.getElementById('progressContainer');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="card" style="text-align: center;"><p class="summary-label">No active investments found.</p><a href="plans.html" style="color: var(--gold-primary); text-decoration: none; font-size: 0.8rem; margin-top: 10px; display: block;">View Plans</a></div>';
+                return;
+            }
+            container.innerHTML = items.map(inv => {
+                const start = new Date(inv.created_at);
+                const now = new Date();
+                const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+                const progress = Math.min(Math.round((elapsed / 20) * 100), 100);
+
+                return `
+                    <div class="card progress-item">
+                        <div class="progress-header">
+                            <span>${inv.plan_name}</span>
+                            <span class="text-gold">${progress}% Complete</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="progress-details">
+                            <div>Daily: ${formatCurrency(inv.daily_profit)}</div>
+                            <div>Total Return: ${formatCurrency(inv.total_expected_return)}</div>
+                            <div>Elapsed: ${elapsed} / 20 Days</div>
+                            <div>Earned so far: ${formatCurrency(inv.amount_earned)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHistory(items) {
+            const container = document.getElementById('historyList');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="summary-label" style="text-align: center;">No earnings recorded yet.</p>';
+                return;
+            }
+            container.innerHTML = items.map(h => `
+                <div class="history-item">
+                    <div class="hist-info">
+                        <h4>Daily Earning Credited</h4>
+                        <p>${new Date(h.created_at).toLocaleDateString()} - ${new Date(h.created_at).toLocaleTimeString()}</p>
+                    </div>
+                    <div class="hist-amt">+${formatCurrency(h.amount)}</div>
+                </div>
+            `).join('');
+        }
+
+        init();
+    </script>
+</body>
+</html>
