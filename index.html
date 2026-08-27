@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINVORA — Smart Investment | Secure Future</title>
+    <meta name="description" content="Premium Nigerian investment platform for wealth growth.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #030508;
+            --bg-navy: #050a14;
+            --gold-primary: #D4AF37;
+            --gold-light: #F9E498;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --accent-blue: #003366;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, .logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+        }
+
+        ul { list-style: none; }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- UI Components --- */
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+            border: 1px solid transparent;
+        }
+
+        .btn-gold {
+            background: var(--gold-gradient);
+            color: #000;
+        }
+
+        .btn-gold:hover {
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+        }
+
+        .btn-outline:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .text-gold { color: var(--gold-primary); }
+
+        .section-padding { padding: 80px 0; }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* --- Header --- */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(3, 5, 8, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            color: var(--gold-primary);
+        }
+
+        .nav-links {
+            display: none;
+        }
+
+        .nav-auth {
+            display: none;
+        }
+
+        .mobile-toggle {
+            font-size: 1.5rem;
+            color: var(--gold-primary);
+            cursor: pointer;
+        }
+
+        /* --- Hero --- */
+        .hero {
+            height: 100vh;
+            min-height: 700px;
+            display: flex;
+            align-items: center;
+            background: radial-gradient(circle at top right, var(--accent-blue), transparent),
+                        url('https://images.unsplash.com/photo-1579546627198-937119c828d2?auto=format&fit=crop&q=80'); /* Abstract financial dark bg */
+            background-size: cover;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(3, 5, 8, 0.85);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            max-width: 700px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-gray);
+            margin-bottom: 35px;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* --- Highlights --- */
+        .highlights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .highlight-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .highlight-card:hover {
+            background: rgba(212, 175, 55, 0.05);
+            border-color: var(--gold-primary);
+        }
+
+        .highlight-icon {
+            font-size: 2.5rem;
+            color: var(--gold-primary);
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        /* --- Investment Plans --- */
+        .plans-container {
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+
+        .plans-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+        }
+
+        .plans-table th, .plans-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .plans-table th {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--gold-primary);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .plans-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* --- Bonus Card --- */
+        .bonus-section {
+            background: var(--gold-gradient);
+            padding: 60px;
+            border-radius: 12px;
+            text-align: center;
+            color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bonus-section h2 { font-size: 3rem; margin-bottom: 10px; }
+        .bonus-amount { font-size: 4rem; font-weight: 800; }
+
+        /* --- How it Works --- */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+        }
+
+        .step-item {
+            text-align: center;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--gold-primary);
+            color: var(--gold-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 20px;
+        }
+
+        /* --- Referral & Gift --- */
+        .split-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .split-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 12px;
+        }
+
+        /* --- Footer --- */
+        footer {
+            background: var(--bg-navy);
+            border-top: 1px solid var(--glass-border);
+            padding: 60px 0 30px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-logo {
+            font-size: 1.5rem;
+            color: var(--gold-primary);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .footer-links h4 {
+            color: var(--gold-primary);
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+            color: var(--text-gray);
+        }
+
+        .copyright {
+            text-align: center;
+            color: var(--text-gray);
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 30px;
+        }
+
+        /* --- Mobile Nav Overlay --- */
+        #mobile-menu {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 80%;
+            height: 100vh;
+            background: var(--bg-navy);
+            z-index: 2000;
+            padding: 40px;
+            transition: 0.4s;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid var(--gold-primary);
+        }
+
+        #mobile-menu.active { left: 0; }
+        
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1500;
+            display: none;
+        }
+        .overlay.active { display: block; }
+
+        @media (min-width: 768px) {
+            .nav-links {
+                display: flex;
+                gap: 30px;
+            }
+            .nav-auth {
+                display: flex;
+                gap: 15px;
+            }
+            .mobile-toggle { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">FINVORA</a>
+            
+            <ul class="nav-links">
+                <li><a href="plans.html">Investment Plans</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="support.html">Support</a></li>
+            </ul>
+
+            <div class="nav-auth">
+                <a href="login.html" class="btn btn-outline">Login</a>
+                <a href="register.html" class="btn btn-gold">Get Started</a>
+            </div>
+
+            <div class="mobile-toggle" id="menu-btn">☰</div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="overlay" id="overlay"></div>
+    <div id="mobile-menu">
+        <a href="index.html" class="logo">FINVORA</a>
+        <a href="plans.html">Investment Plans</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="support.html">Support</a>
+        <hr style="border: 0; border-top: 1px solid var(--glass-border);">
+        <a href="login.html" class="btn btn-outline">Login</a>
+        <a href="register.html" class="btn btn-gold">Get Started</a>
+    </div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="text-gold">SMARTER WAY TO GROW YOUR WEALTH</h1>
+                    <p>Experience premium investment solutions tailored for the ambitious. Join FINVORA today and take control of your financial future with our secure, transparent platform.</p>
+                    <div class="hero-btns">
+                        <a href="register.html" class="btn btn-gold">Start Investing Now</a>
+                        <a href="plans.html" class="btn btn-outline">View Plans</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Highlights -->
+        <section class="section-padding">
+            <div class="container">
+                <div class="highlights-grid">
+                    <div class="highlight-card">
+                        <span class="highlight-icon">📈</span>
+                        <h3>Daily Earnings</h3>
+                        <p>Watch your wealth grow with consistent daily returns on your active investments.</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span class="highlight-icon">🛡️</span>
+                        <h3>Secure Wallet</h3>
+                        <p>Industry-standard encryption to keep your funds and personal data protected.</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span class="highlight-icon">⚡</span>
+                        <h3>Fast Deposits</h3>
+                        <p>Quick and seamless funding methods to help you start investing without delay.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Investment Plans Preview -->
+        <section class="section-padding" id="plans">
+            <div class="container">
+                <div class="section-title">
+                    <h2>Investment Plans</h2>
+                    <p>Select a VIP plan that fits your financial goals.</p>
+                </div>
+                <div class="plans-container">
+                    <table class="plans-table">
+                        <thead>
+                            <tr>
+                                <th>VIP Level</th>
+                                <th>Investment</th>
+                                <th>Daily Income</th>
+                                <th>Duration</th>
+                                <th>Total Earning</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Plan 1 -->
+                            <tr>
+                                <td class="text-gold">VIP 1</td>
+                                <td>₦2,800</td>
+                                <td>₦650</td>
+                                <td>20 Days</td>
+                                <td class="text-gold">₦13,000</td>
+                                <td><a href="register.html" class="btn btn-gold" style="padding: 5px 15px; font-size: 0.7rem;">Invest</a></td>
+                            </tr>
+                            <!-- Plan 5 (Mid Example) -->
+                            <tr>
+                                <td class="text-gold">VIP 5</td>
+                                <td>₦10,000</td>
+                                <td>₦1,700</td>
+                                <td>20 Days</td>
+                                <td class="text-gold">₦34,000</td>
+                                <td><a href="register.html" class="btn btn-gold" style="padding: 5px 15px; font-size: 0.7rem;">Invest</a></td>
+                            </tr>
+                            <!-- Plan 10 (Max Example) -->
+                            <tr>
+                                <td class="text-gold">VIP 10</td>
+                                <td>₦100,000</td>
+                                <td>₦13,000</td>
+                                <td>20 Days</td>
+                                <td class="text-gold">₦260,000</td>
+                                <td><a href="register.html" class="btn btn-gold" style="padding: 5px 15px; font-size: 0.7rem;">Invest</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="plans.html" class="btn btn-outline">View All 10 VIP Plans</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Welcome Bonus -->
+        <section class="section-padding">
+            <div class="container">
+                <div class="bonus-section">
+                    <h2 style="font-family: 'Inter'; letter-spacing: 2px;">WELCOME BONUS</h2>
+                    <div class="bonus-amount">₦800</div>
+                    <p style="font-weight: 600; margin-top: 10px;">Register today and unlock your starting bonus.</p>
+                    <a href="register.html" class="btn" style="background: #000; color: #fff; margin-top: 25px;">Claim Bonus Now</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="section-padding" id="how-it-works">
+            <div class="container">
+                <div class="section-title">
+                    <h2>How It Works</h2>
+                </div>
+                <div class="steps-grid">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <h3>Create Account</h3>
+                        <p>Sign up in minutes with your basic details.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <h3>Fund Wallet</h3>
+                        <p>Deposit funds securely using our available payment channels.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <h3>Choose Plan</h3>
+                        <p>Select the VIP investment plan that suits your budget.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <h3>Track Growth</h3>
+                        <p>Monitor your daily earnings and withdraw to your bank.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Referral & Gift Section -->
+        <section class="section-padding">
+            <div class="container">
+                <div class="split-grid">
+                    <div class="split-card">
+                        <h3 class="text-gold">Invite. Earn. Grow.</h3>
+                        <p style="margin: 15px 0 25px; color: var(--text-gray);">Share FINVORA with your network and earn commissions based on our referral program terms.</p>
+                        <a href="register.html" class="btn btn-gold">Start Referring</a>
+                    </div>
+                    <div class="split-card" style="border-color: #0047AB;">
+                        <h3 style="color: #4A90E2;">Have a Gift Code?</h3>
+                        <p style="margin: 15px 0 25px; color: var(--text-gray);">Redeem your FINVORA gift code and receive the reward assigned to your code instantly.</p>
+                        <a href="gift-code.html" class="btn btn-outline" style="border-color: #4A90E2; color: #4A90E2;">Redeem Gift Code</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="section-padding">
+            <div class="container">
+                <div style="background: var(--gold-gradient); padding: 80px 20px; border-radius: 12px; text-align: center; color: #000;">
+                    <h2 style="font-size: 3rem; margin-bottom: 20px;">READY TO GET STARTED?</h2>
+                    <div class="hero-btns" style="justify-content: center;">
+                        <a href="register.html" class="btn" style="background: #000; color: #fff; padding: 15px 40px;">Create Account</a>
+                        <a href="login.html" class="btn" style="border: 2px solid #000; color: #000; padding: 15px 40px;">Login</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <span class="footer-logo">FINVORA</span>
+                    <p style="color: var(--text-gray); font-size: 0.9rem;">SMART INVESTMENT | SECURE FUTURE</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Platform</h4>
+                    <ul>
+                        <li><a href="plans.html">Investment Plans</a></li>
+                        <li><a href="gift-code.html">Gift Code</a></li>
+                        <li><a href="support.html">Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms & Conditions</a></li>
+                        <li><a href="terms.html#privacy">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Account</h4>
+                    <ul>
+                        <li><a href="login.html">Login</a></li>
+                        <li><a href="register.html">Register</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2024 FINVORA. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple Mobile Menu Logic
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const overlay = document.getElementById('overlay');
+
+        function toggleMenu() {
+            mobileMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        menuBtn.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
+
+        // Close menu on link click
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', toggleMenu);
+        });
+    </script>
+</body>
+</html>
