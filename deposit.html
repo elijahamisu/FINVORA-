@@ -2,206 +2,231 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deposit Funds | FINVORA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deposit | FINVORA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #020408;
+            --bg-dark: #030508;
             --bg-navy: #050a14;
-            --bg-sidebar: #03060d;
             --gold-primary: #D4AF37;
             --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
             --text-white: #ffffff;
             --text-gray: #a0aec0;
-            --glass-border: rgba(212, 175, 55, 0.15);
-            --sidebar-width: 260px;
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --error: #ff4d4d;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-white); min-height: 100vh; display: flex; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
 
-        /* Sidebar & Layout */
-        aside { width: var(--sidebar-width); background: var(--bg-sidebar); border-right: 1px solid var(--glass-border); position: fixed; height: 100vh; z-index: 1000; transition: transform 0.3s ease; }
-        .nav-menu { padding: 30px 15px; }
-        .nav-item { display: flex; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; }
-        .nav-item.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(3, 5, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
 
-        main { flex: 1; margin-left: var(--sidebar-width); padding: 30px; width: calc(100% - var(--sidebar-width)); }
+        /* Container & Cards */
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .card-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gold-primary); margin-bottom: 15px; }
 
-        /* Deposit UI */
-        .deposit-grid { display: grid; grid-template-columns: 1fr 350px; gap: 30px; }
-        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 30px; border-radius: 16px; margin-bottom: 30px; }
-        
-        .input-group { margin: 25px 0; }
-        .input-group label { display: block; font-size: 0.8rem; color: var(--text-gray); margin-bottom: 10px; }
+        /* Balance Display */
+        .balance-box { display: flex; justify-content: space-between; align-items: center; }
+        .balance-label { font-size: 0.8rem; color: var(--text-gray); }
+        .balance-val { font-size: 1.2rem; font-weight: 700; color: var(--gold-primary); }
+
+        /* Form Controls */
+        .form-group { margin-top: 20px; }
+        .label { display: block; font-size: 0.85rem; color: var(--text-gray); margin-bottom: 8px; }
         .amount-input-wrap { position: relative; }
-        .amount-input-wrap span { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--gold-primary); font-weight: 700; font-size: 1.2rem; }
-        .amount-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 15px 15px 15px 45px; border-radius: 8px; color: #fff; font-size: 1.5rem; font-weight: 700; outline: none; }
-        .amount-input:focus { border-color: var(--gold-primary); }
+        .currency-symbol { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--gold-primary); font-weight: 700; }
+        .input-field {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            padding: 15px 15px 15px 35px; border-radius: 10px; color: #fff; font-size: 1.2rem; font-weight: 700; outline: none;
+        }
+        .min-notice { font-size: 0.75rem; color: var(--text-gray); margin-top: 8px; display: block; }
 
-        .quick-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
-        .quick-btn { background: var(--glass); border: 1px solid var(--glass-border); padding: 10px; border-radius: 6px; color: var(--text-gray); cursor: pointer; font-size: 0.8rem; font-weight: 600; text-align: center; }
-        .quick-btn:hover { color: var(--gold-primary); border-color: var(--gold-primary); }
+        .btn-gold {
+            width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: 700; font-size: 1rem;
+            background: var(--gold-gradient); color: #000; cursor: pointer; transition: 0.3s;
+        }
+        .btn-gold:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .btn-pay { width: 100%; padding: 18px; background: var(--gold-gradient); border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; color: #000; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .btn-pay:disabled { opacity: 0.5; }
+        /* Pending/History UI */
+        .status-badge { font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        .status-pending { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+        
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-item:last-child { border: none; }
+        .hist-amt { font-weight: 600; font-size: 0.9rem; }
+        .hist-date { font-size: 0.75rem; color: var(--text-gray); }
 
-        .info-card h4 { color: var(--gold-primary); margin-bottom: 15px; font-size: 0.9rem; }
-        .info-card p { font-size: 0.85rem; color: var(--text-gray); margin-bottom: 10px; line-height: 1.5; }
+        /* Sidebar/Overlay (Mobile) */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 80%; max-width: 300px; height: 100vh; background: var(--bg-navy); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-weight: 500; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
 
-        /* History Table */
-        .table-wrap { overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th { text-align: left; padding: 15px; font-size: 0.7rem; color: var(--gold-primary); border-bottom: 1px solid var(--glass-border); text-transform: uppercase; }
-        td { padding: 15px; border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; }
-
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
-        .status-pending { background: rgba(255,255,255,0.05); color: var(--text-gray); }
-
-        /* Mobile Adjustments */
-        .mobile-nav { display: none; background: var(--bg-sidebar); padding: 15px 20px; border-bottom: 1px solid var(--glass-border); justify-content: space-between; }
-
-        @media (max-width: 992px) {
-            aside { transform: translateX(-100%); }
-            main { margin-left: 0; width: 100%; padding: 20px; }
-            .deposit-grid { grid-template-columns: 1fr; }
-            .mobile-nav { display: flex; }
+        /* Desktop Enhancement */
+        @media (min-width: 768px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; height: 100vh; }
+            .overlay, header { display: none; }
+            .main-content { flex: 1; }
+            .deposit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="mobile-nav">
-        <span style="font-family: 'Playfair Display'; color: var(--gold-primary); font-size: 1.2rem;">FINVORA</span>
-        <div id="toggleMenu" style="cursor: pointer; color: var(--gold-primary); font-size: 1.5rem;">☰</div>
+    <div class="overlay" id="overlay"></div>
+    
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link active">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="deposit-grid">
+                    <div>
+                        <!-- Balance Card -->
+                        <div class="card">
+                            <div class="balance-box">
+                                <span class="balance-label">Available Balance</span>
+                                <span class="balance-val" id="walletBalance">₦0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Deposit Form -->
+                        <div class="card">
+                            <h2 class="card-title">Add Funds</h2>
+                            <div class="form-group">
+                                <label class="label">Deposit Amount</label>
+                                <div class="amount-input-wrap">
+                                    <span class="currency-symbol">₦</span>
+                                    <input type="number" id="depositAmount" class="input-field" placeholder="0.00" min="2800">
+                                </div>
+                                <span class="min-notice">Minimum Deposit: ₦2,800.00</span>
+                            </div>
+                            <button class="btn-gold" id="proceedBtn" style="margin-top: 25px;">PROCEED TO DEPOSIT</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Instructions -->
+                        <div class="card">
+                            <h2 class="card-title">Instructions</h2>
+                            <p class="label" style="line-height: 1.6;">
+                                1. Enter the amount you wish to deposit.<br>
+                                2. Click "Proceed" to initialize your payment.<br>
+                                3. Complete the transaction via the secure gateway.<br>
+                                4. Your wallet will be credited automatically upon verification.
+                            </p>
+                        </div>
+
+                        <!-- History Preview -->
+                        <div class="card">
+                            <h2 class="card-title">Recent Deposits</h2>
+                            <div id="depositHistory">
+                                <p class="label" style="text-align: center; padding: 10px;">Loading history...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support CTA -->
+                <div class="card" style="text-align: center; border-style: dashed;">
+                    <p class="label">Need help with your deposit?</p>
+                    <a href="support.html" style="color: var(--gold-primary); text-decoration: none; font-weight: 700; font-size: 0.9rem; margin-top: 5px; display: inline-block;">Contact Support</a>
+                </div>
+            </div>
+        </main>
     </div>
-
-    <aside id="sidebar">
-        <div style="padding: 30px; font-family: 'Playfair Display'; font-size: 1.8rem; color: var(--gold-primary);">FINVORA</div>
-        <nav class="nav-menu">
-            <a href="dashboard.html" class="nav-item">Dashboard</a>
-            <a href="plans.html" class="nav-item">Investment Plans</a>
-            <a href="wallet.html" class="nav-item">Wallet</a>
-            <a href="deposit.html" class="nav-item active">Deposit</a>
-            <a href="withdraw.html" class="nav-item">Withdraw</a>
-            <a href="gift-code.html" class="nav-item">🎁 Gift Code</a>
-            <a href="support.html" class="nav-item">Support</a>
-        </nav>
-    </aside>
-
-    <main>
-        <div style="margin-bottom: 30px;">
-            <h1>Deposit Funds</h1>
-            <p style="color: var(--text-gray); font-size: 0.9rem;">Add funds to your secure wallet</p>
-        </div>
-
-        <div class="deposit-grid">
-            <div class="left-col">
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: var(--text-gray); font-size: 0.85rem;">Available Balance</span>
-                        <span id="userBalance" style="font-weight: 700; color: var(--gold-primary);">₦0.00</span>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Enter Deposit Amount</label>
-                        <div class="amount-input-wrap">
-                            <span>₦</span>
-                            <input type="number" id="depositAmount" class="amount-input" placeholder="0.00" min="2800">
-                        </div>
-                        <div class="quick-amounts">
-                            <div class="quick-btn" data-val="2800">2,800</div>
-                            <div class="quick-btn" data-val="10000">10,000</div>
-                            <div class="quick-btn" data-val="50000">50,000</div>
-                            <div class="quick-btn" data-val="100000">100,000</div>
-                        </div>
-                    </div>
-
-                    <button class="btn-pay" id="initPayBtn">CONTINUE TO PAYMENT</button>
-                    <p style="text-align: center; font-size: 0.75rem; color: var(--text-gray); margin-top: 15px;">
-                        Minimum Deposit: ₦2,800.00
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Recent Deposits</h3>
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr><th>Amount</th><th>Reference</th><th>Status</th><th>Date</th></tr>
-                            </thead>
-                            <tbody id="depositHistory">
-                                <tr><td colspan="4" style="text-align: center; color: var(--text-gray); padding: 20px;">Loading records...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="right-col">
-                <div class="card info-card">
-                    <h4>Before You Deposit</h4>
-                    <p>• Ensure the amount is correct before continuing to the payment gateway.</p>
-                    <p>• Only use authorized payment channels provided on the next screen.</p>
-                    <p>• Do not close your browser until the transaction is confirmed.</p>
-                    <p>• Credits are usually instant but can take up to 30 minutes in some cases.</p>
-                    <p>• Keep your payment reference for support if needed.</p>
-                </div>
-            </div>
-        </div>
-    </main>
 
     <script type="module">
         import { supabase } from './src/lib/supabase.js';
         import { auth } from './src/lib/auth.js';
-        import { formatCurrency } from './src/utils/format.js';
 
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const proceedBtn = document.getElementById('proceedBtn');
         const amountInput = document.getElementById('depositAmount');
-        const initPayBtn = document.getElementById('initPayBtn');
-        const depositHistory = document.getElementById('depositHistory');
+        const logoutBtn = document.getElementById('logoutBtn');
 
-        async function initDepositPage() {
-            const session = await auth.requireAuth();
-            if (!session) return;
+        // Navigation controls
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        menuToggle?.addEventListener('click', toggleMenu);
+        overlay?.addEventListener('click', toggleMenu);
+        logoutBtn?.addEventListener('click', async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; });
 
-            // Fetch current balance
-            const { data: profile } = await supabase.from('profiles').select('wallet_balance').eq('id', session.user.id).single();
-            if (profile) document.getElementById('userBalance').textContent = formatCurrency(profile.wallet_balance);
+        // Format Currency
+        const formatNGN = (v) => `₦${Number(v).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
-            // Fetch existing deposits
-            const { data: deposits } = await supabase.from('deposits').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(5);
+        async function init() {
+            const session = await auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            const user = session.user;
+
+            // Load Balance
+            const { data: profile } = await supabase.from('profiles').select('wallet_balance').eq('id', user.id).single();
+            if (profile) document.getElementById('walletBalance').textContent = formatNGN(profile.wallet_balance);
+
+            // Load History
+            const { data: deposits } = await supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
             renderHistory(deposits);
         }
 
-        function renderHistory(data) {
-            if (!data || data.length === 0) {
-                depositHistory.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-gray);">No deposits yet</td></tr>`;
+        function renderHistory(items) {
+            const container = document.getElementById('depositHistory');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="label" style="text-align: center;">No deposits yet</p>';
                 return;
             }
-            depositHistory.innerHTML = data.map(d => `
-                <tr>
-                    <td style="font-weight: 600;">${formatCurrency(d.amount)}</td>
-                    <td style="font-size: 0.7rem; color: var(--text-gray);">${d.reference}</td>
-                    <td><span class="status-badge status-${d.status}">${d.status}</span></td>
-                    <td style="font-size: 0.75rem; color: var(--text-gray);">${new Date(d.created_at).toLocaleDateString()}</td>
-                </tr>
+            container.innerHTML = items.map(d => `
+                <div class="history-item">
+                    <div>
+                        <div class="hist-amt">${formatNGN(d.amount)}</div>
+                        <div class="hist-date">${new Date(d.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <span class="status-badge status-${d.status}">${d.status}</span>
+                </div>
             `).join('');
         }
 
-        // Quick Select
-        document.querySelectorAll('.quick-btn').forEach(btn => {
-            btn.onclick = () => amountInput.value = btn.getAttribute('data-val');
-        });
-
-        initPayBtn.onclick = async () => {
+        proceedBtn.addEventListener('click', async () => {
             const amount = parseFloat(amountInput.value);
-            if (!amount || amount < 2800) return alert("Minimum deposit is ₦2,800");
+            if (isNaN(amount) || amount < 2800) { alert("Minimum deposit is ₦2,800"); return; }
 
-            initPayBtn.disabled = true;
-            initPayBtn.textContent = "INITIALIZING...";
+            proceedBtn.disabled = true;
+            proceedBtn.textContent = "Creating Payment...";
 
             try {
                 const session = await auth.getSession();
@@ -217,18 +242,17 @@
                 const result = await res.json();
                 if (!result.success) throw new Error(result.error);
 
-                // For this step, we alert success and refresh to show the "pending" record
-                alert("Deposit record created. Reference: " + result.reference + "\n\n(In the next step, you would be redirected to the payment gateway.)");
+                alert(`Deposit Request Created!\nReference: ${result.reference}\nStatus: Pending verification.`);
                 window.location.reload();
 
             } catch (err) {
                 alert(err.message);
-                initPayBtn.disabled = false;
-                initPayBtn.textContent = "CONTINUE TO PAYMENT";
+                proceedBtn.disabled = false;
+                proceedBtn.textContent = "PROCEED TO DEPOSIT";
             }
-        };
+        });
 
-        initDepositPage();
+        init();
     </script>
 </body>
 </html>
