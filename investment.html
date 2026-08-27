@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Investment | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --error: #ff4d4d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-white); min-height: 100vh; padding: 20px; }
+
+        .purchase-container { max-width: 550px; margin: 40px auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 30px; margin-bottom: 20px; }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); text-align: center; display: block; font-size: 1.8rem; text-decoration: none; margin-bottom: 30px; }
+        
+        .section-title { font-size: 0.8rem; text-transform: uppercase; color: var(--gold-primary); letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; }
+        
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; }
+        .summary-label { color: var(--text-gray); }
+        .summary-value { font-weight: 600; }
+
+        .balance-box { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 8px; margin-top: 10px; }
+        .insufficient { color: var(--error); font-size: 0.8rem; margin-top: 10px; display: none; }
+
+        .btn-confirm { width: 100%; padding: 16px; background: var(--gold-gradient); border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; color: #000; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .success-state { text-align: center; display: none; }
+        .success-icon { font-size: 4rem; color: var(--gold-primary); margin-bottom: 20px; }
+
+        .loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loader">
+        <p style="color: var(--gold-primary);">Processing Investment...</p>
+    </div>
+
+    <div class="purchase-container">
+        <a href="dashboard.html" class="logo">FINVORA</a>
+
+        <!-- Confirmation UI -->
+        <div id="confirmationUI">
+            <div class="card">
+                <h3 class="section-title">Plan Summary</h3>
+                <div id="planSummary">
+                    <div class="summary-row"><span class="summary-label">Plan Name</span><span class="summary-value" id="dispPlanName">Loading...</span></div>
+                    <div class="summary-row"><span class="summary-label">Daily Profit</span><span class="summary-value text-gold" id="dispDaily">₦0.00</span></div>
+                    <div class="summary-row"><span class="summary-label">Duration</span><span class="summary-value" id="dispDays">0 Days</span></div>
+                    <div class="summary-row"><span class="summary-label">Total Return</span><span class="summary-value" id="dispTotal">₦0.00</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="section-title">Payment Details</h3>
+                <div class="summary-row"><span class="summary-label">Investment Amount</span><span class="summary-value" id="dispAmount">₦0.00</span></div>
+                <div class="balance-box">
+                    <div class="summary-row" style="margin-bottom: 0;">
+                        <span class="summary-label">Your Available Balance</span>
+                        <span class="summary-value" id="userBalance">₦0.00</span>
+                    </div>
+                </div>
+                <p class="insufficient" id="balanceError">Insufficient funds. Please fund your wallet to continue.</p>
+                
+                <div style="margin-top: 25px;">
+                    <button class="btn-confirm" id="confirmBtn">CONFIRM INVESTMENT</button>
+                    <a href="deposit.html" id="depositBtn" class="btn-confirm" style="display: none; text-align: center; text-decoration: none; background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary);">DEPOSIT FUNDS</a>
+                    <a href="plans.html" style="display: block; text-align: center; margin-top: 15px; color: var(--text-gray); font-size: 0.85rem; text-decoration: none;">Cancel and go back</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success UI -->
+        <div class="card success-state" id="successUI">
+            <div class="success-icon">🏆</div>
+            <h2 style="margin-bottom: 10px;">Investment Successful!</h2>
+            <p style="color: var(--text-gray); margin-bottom: 30px;">Your investment has been created and your daily earnings will begin accruing.</p>
+            <a href="dashboard.html" class="btn-confirm" style="display: block; text-decoration: none;">GO TO DASHBOARD</a>
+            <a href="transactions.html" style="display: block; margin-top: 15px; color: var(--gold-primary); text-decoration: none; font-size: 0.9rem;">View Transactions</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+        import { investmentPlans } from './src/lib/plans-data.js';
+        import { formatCurrency } from './src/utils/format.js';
+
+        const confirmBtn = document.getElementById('confirmBtn');
+        const depositBtn = document.getElementById('depositBtn');
+        const loader = document.getElementById('loader');
+        const balanceError = document.getElementById('balanceError');
+
+        let selectedPlan = null;
+        let currentUser = null;
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+
+            // 1. Get Plan ID from URL
+            const params = new URLSearchParams(window.location.search);
+            const planId = params.get('plan');
+            selectedPlan = investmentPlans.find(p => p.id === planId);
+
+            if (!selectedPlan) {
+                alert("Invalid investment plan selected.");
+                window.location.href = 'plans.html';
+                return;
+            }
+
+            // 2. Load Real User Balance
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('wallet_balance')
+                .eq('id', session.user.id)
+                .single();
+            
+            currentUser = profile;
+
+            // 3. Render UI
+            document.getElementById('dispPlanName').textContent = selectedPlan.name;
+            document.getElementById('dispDaily').textContent = formatCurrency(selectedPlan.daily);
+            document.getElementById('dispDays').textContent = `${selectedPlan.days} Days`;
+            document.getElementById('dispTotal').textContent = formatCurrency(selectedPlan.total);
+            document.getElementById('dispAmount').textContent = formatCurrency(selectedPlan.min);
+            document.getElementById('userBalance').textContent = formatCurrency(profile.wallet_balance);
+
+            // Check Balance
+            if (profile.wallet_balance < selectedPlan.min) {
+                confirmBtn.style.display = 'none';
+                depositBtn.style.display = 'block';
+                balanceError.style.display = 'block';
+            }
+        }
+
+        confirmBtn.onclick = async () => {
+            confirmBtn.disabled = true;
+            loader.style.display = 'flex';
+
+            try {
+                const session = await auth.getSession();
+                const response = await fetch('/api/investment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ planId: selectedPlan.id })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('confirmationUI').style.display = 'none';
+                    document.getElementById('successUI').style.display = 'block';
+                } else {
+                    throw new Error(result.error || 'Investment failed');
+                }
+            } catch (err) {
+                alert(err.message);
+                confirmBtn.disabled = false;
+            } finally {
+                loader.style.display = 'none';
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>
