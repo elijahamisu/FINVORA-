@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Withdraw | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --error: #ff4d4d;
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-white); min-height: 100vh; display: flex; }
+
+        /* Sidebar & Layout */
+        aside { width: var(--sidebar-width); background: var(--bg-sidebar); border-right: 1px solid var(--glass-border); position: fixed; height: 100vh; z-index: 1000; transition: transform 0.3s ease; }
+        .nav-menu { padding: 30px 15px; }
+        .nav-item { display: flex; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.9rem; }
+        .nav-item.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+
+        main { flex: 1; margin-left: var(--sidebar-width); padding: 30px; width: calc(100% - var(--sidebar-width)); }
+
+        /* Withdrawal UI */
+        .withdraw-container { max-width: 600px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 25px; border-radius: 16px; margin-bottom: 25px; }
+        
+        .balance-preview { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.8rem; color: var(--text-gray); margin-bottom: 8px; }
+        .input-wrap { position: relative; }
+        .input-wrap span { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--gold-primary); font-weight: 700; }
+        .form-control { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 14px 15px; border-radius: 8px; color: #fff; font-size: 1rem; outline: none; }
+        .form-control:focus { border-color: var(--gold-primary); }
+        .amount-input { padding-left: 35px; font-size: 1.2rem; font-weight: 700; color: var(--gold-primary); }
+
+        .fee-box { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; }
+        .fee-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        
+        .btn-withdraw { width: 100%; padding: 16px; background: var(--gold-gradient); border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; color: #000; cursor: pointer; transition: 0.3s; }
+        .btn-withdraw:disabled { opacity: 0.5; }
+
+        .history-card { padding: 15px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .history-card:last-child { border: none; }
+        .status-badge { font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        .status-pending { background: rgba(255,255,255,0.05); color: var(--text-gray); }
+
+        .mobile-header { display: none; background: var(--bg-sidebar); padding: 15px 20px; border-bottom: 1px solid var(--glass-border); justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1100; }
+
+        @media (max-width: 992px) {
+            aside { transform: translateX(-100%); }
+            aside.active { transform: translateX(0); }
+            main { margin-left: 0; width: 100%; padding: 20px; }
+            .mobile-header { display: flex; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-header">
+        <span style="font-family: 'Playfair Display'; color: var(--gold-primary); font-size: 1.2rem;">FINVORA</span>
+        <div id="toggleMenu" style="cursor: pointer; color: var(--gold-primary); font-size: 1.5rem;">☰</div>
+    </div>
+
+    <aside id="sidebar">
+        <div style="padding: 30px; font-family: 'Playfair Display'; font-size: 1.8rem; color: var(--gold-primary);">FINVORA</div>
+        <nav class="nav-menu">
+            <a href="dashboard.html" class="nav-item">Dashboard</a>
+            <a href="plans.html" class="nav-item">Investment Plans</a>
+            <a href="wallet.html" class="nav-item">Wallet</a>
+            <a href="deposit.html" class="nav-item">Deposit</a>
+            <a href="withdraw.html" class="nav-item active">Withdraw</a>
+            <a href="gift-code.html" class="nav-item">🎁 Gift Code</a>
+            <a href="support.html" class="nav-item">Support</a>
+        </nav>
+    </aside>
+
+    <main>
+        <div class="withdraw-container">
+            <div style="margin-bottom: 25px;">
+                <h1>Withdraw Funds</h1>
+                <p style="color: var(--text-gray); font-size: 0.9rem;">Transfer your earnings to your bank account</p>
+            </div>
+
+            <div class="card">
+                <div class="balance-preview">
+                    <span style="color: var(--text-gray); font-size: 0.85rem;">Available Balance</span>
+                    <span id="userBalance" style="font-weight: 700; color: var(--gold-primary); font-size: 1.1rem;">₦0.00</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Withdrawal Amount (Min: ₦650)</label>
+                    <div class="input-wrap">
+                        <span>₦</span>
+                        <input type="number" id="withdrawAmount" class="form-control amount-input" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="fee-box">
+                    <div class="fee-row"><span>Withdrawal Fee (7%)</span><span id="feePreview">₦0.00</span></div>
+                    <div class="fee-row" style="margin-top: 10px; font-weight: 700; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                        <span>Amount You Receive</span><span id="netPreview" class="text-gold">₦0.00</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Bank Name</label>
+                    <input type="text" id="bankName" class="form-control" placeholder="Enter bank name">
+                </div>
+                <div class="form-group">
+                    <label>Account Number</label>
+                    <input type="number" id="accountNumber" class="form-control" placeholder="Enter 10-digit account number">
+                </div>
+                <div class="form-group">
+                    <label>Account Name</label>
+                    <input type="text" id="accountName" class="form-control" placeholder="Enter full account name">
+                </div>
+
+                <div style="margin: 20px 0; display: flex; gap: 10px; align-items: flex-start;">
+                    <input type="checkbox" id="confirmCheck" style="margin-top: 4px;">
+                    <label for="confirmCheck" style="font-size: 0.75rem; color: var(--text-gray);">I confirm that the bank details provided are correct and belong to me.</label>
+                </div>
+
+                <button class="btn-withdraw" id="submitBtn">CONFIRM WITHDRAWAL</button>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size: 1rem; margin-bottom: 15px;">Recent Withdrawals</h3>
+                <div id="historyList">
+                    <p style="text-align: center; color: var(--text-gray); font-size: 0.8rem; padding: 20px;">Loading history...</p>
+                </div>
+            </div>
+
+            <div class="card" style="border-style: dashed; text-align: center;">
+                <p style="font-size: 0.8rem; color: var(--text-gray);">Withdrawal requests are processed within 24 hours.</p>
+                <a href="support.html" style="color: var(--gold-primary); font-size: 0.85rem; text-decoration: none; font-weight: 700; margin-top: 10px; display: inline-block;">Need Help? Contact Support</a>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+        import { formatCurrency } from './src/utils/format.js';
+
+        const amountInput = document.getElementById('withdrawAmount');
+        const feePreview = document.getElementById('feePreview');
+        const netPreview = document.getElementById('netPreview');
+        const submitBtn = document.getElementById('submitBtn');
+        const historyList = document.getElementById('historyList');
+
+        let availableBalance = 0;
+
+        async function initWithdrawPage() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+
+            // Load Balance
+            const { data: profile } = await supabase.from('profiles').select('wallet_balance').eq('id', session.user.id).single();
+            if (profile) {
+                availableBalance = profile.wallet_balance;
+                document.getElementById('userBalance').textContent = formatCurrency(availableBalance);
+            }
+
+            // Load History
+            const { data: history } = await supabase.from('withdrawals').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(5);
+            renderHistory(history);
+        }
+
+        function renderHistory(data) {
+            if (!data || data.length === 0) {
+                historyList.innerHTML = `<p style="text-align: center; color: var(--text-gray); font-size: 0.8rem; padding: 20px;">No withdrawals yet</p>`;
+                return;
+            }
+            historyList.innerHTML = data.map(item => `
+                <div class="history-card">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.9rem;">${formatCurrency(item.amount)}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-gray);">${new Date(item.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span>
+                </div>
+            `).join('');
+        }
+
+        amountInput.oninput = () => {
+            const val = parseFloat(amountInput.value) || 0;
+            const fee = val * 0.07;
+            const net = val - fee;
+            feePreview.textContent = formatCurrency(fee);
+            netPreview.textContent = formatCurrency(net > 0 ? net : 0);
+        };
+
+        submitBtn.onclick = async () => {
+            const amount = parseFloat(amountInput.value);
+            const bankName = document.getElementById('bankName').value.trim();
+            const accNum = document.getElementById('accountNumber').value.trim();
+            const accName = document.getElementById('accountName').value.trim();
+            const confirmed = document.getElementById('confirmCheck').checked;
+
+            if (!amount || amount < 650) return alert("Minimum withdrawal is ₦650");
+            if (amount > availableBalance) return alert("Insufficient balance");
+            if (!bankName || !accNum || !accName) return alert("Please fill all bank details");
+            if (accNum.length !== 10) return alert("Invalid account number");
+            if (!confirmed) return alert("Please confirm your bank details");
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Submitting Withdrawal...";
+
+            try {
+                const session = await auth.getSession();
+                const res = await fetch('/api/wallet', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${session.access_token}` 
+                    },
+                    body: JSON.stringify({ 
+                        action: 'withdraw', 
+                        amount, 
+                        payoutDetails: { bankName, accountNumber: accNum, accountName: accName } 
+                    })
+                });
+
+                const result = await res.json();
+                if (!result.success) throw new Error(result.error);
+
+                alert("Withdrawal request submitted successfully! Your funds are now pending review.");
+                window.location.reload();
+
+            } catch (err) {
+                alert(err.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = "CONFIRM WITHDRAWAL";
+            }
+        };
+
+        initWithdrawPage();
+    </script>
+</body>
+</html>
