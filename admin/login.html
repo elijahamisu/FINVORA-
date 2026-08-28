@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Login | FINVORA Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --error: #ff4d4d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background-color: var(--bg-dark); 
+            background-image: radial-gradient(circle at center, #001a33 0%, var(--bg-dark) 100%);
+            color: var(--text-white); 
+            font-family: 'Inter', sans-serif; 
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--bg-navy);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--gold-gradient);
+        }
+
+        .brand { text-align: center; margin-bottom: 35px; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold-primary); letter-spacing: 3px; text-decoration: none; }
+        .brand p { font-size: 0.7rem; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; font-weight: 700; }
+
+        .form-group { margin-bottom: 20px; }
+        .label { display: block; font-size: 0.75rem; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .input-wrapper { position: relative; }
+        .input-field {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            padding: 14px 15px; border-radius: 8px; color: #fff; font-size: 1rem; outline: none; transition: 0.3s;
+        }
+        .input-field:focus { border-color: var(--gold-primary); background: rgba(255,255,255,0.08); }
+
+        .toggle-pw { 
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--text-gray); cursor: pointer; font-size: 0.8rem;
+        }
+
+        .btn-login {
+            width: 100%; padding: 16px; border-radius: 8px; border: none; font-weight: 700; font-size: 1rem;
+            background: var(--gold-gradient); color: #000; cursor: pointer; margin-top: 10px; transition: 0.3s;
+        }
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .message { font-size: 0.85rem; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; text-align: center; }
+        .msg-error { display: block; background: rgba(255, 77, 77, 0.1); color: var(--error); border: 1px solid var(--error); }
+
+        .security-notice { text-align: center; margin-top: 30px; font-size: 0.75rem; color: var(--text-gray); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; }
+        .back-link { display: block; text-align: center; margin-top: 20px; font-size: 0.8rem; color: var(--gold-primary); text-decoration: none; }
+
+        @media (max-width: 360px) {
+            .login-card { padding: 30px 20px; }
+            .logo { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="brand">
+            <a href="../index.html" class="logo">FINVORA</a>
+            <p>Admin Control Center</p>
+        </div>
+
+        <div id="msgBox" class="message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="label">Admin Email</label>
+                <input type="email" id="email" class="input-field" placeholder="admin@finvora.com" required>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+                    <button type="button" class="toggle-pw" id="togglePw">SHOW</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">LOGIN</button>
+        </form>
+
+        <div class="security-notice">
+            <b>Secure Access Restricted</b><br>
+            Authorized FINVORA administrators only.
+        </div>
+
+        <a href="../index.html" class="back-link">← Back to FINVORA</a>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../src/lib/supabase.js';
+
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const msgBox = document.getElementById('msgBox');
+        const togglePw = document.getElementById('togglePw');
+        const passwordInput = document.getElementById('password');
+
+        // 1. Session & Role Check on Load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const isAdmin = await checkAdminRole(session.user.id);
+                if (isAdmin) window.location.href = 'index.html';
+            }
+        });
+
+        // 2. Password Visibility
+        togglePw.addEventListener('click', () => {
+            const isPw = passwordInput.type === 'password';
+            passwordInput.type = isPw ? 'text' : 'password';
+            togglePw.textContent = isPw ? 'HIDE' : 'SHOW';
+        });
+
+        // 3. Authorization Helper
+        async function checkAdminRole(userId) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', userId)
+                .single();
+            
+            return !error && data?.role === 'admin';
+        }
+
+        function showError(text) {
+            msgBox.textContent = text;
+            msgBox.className = 'message msg-error';
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'LOGIN';
+        }
+
+        // 4. Login Logic
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msgBox.style.display = 'none';
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'SIGNING IN...';
+
+            const email = document.getElementById('email').value.trim();
+            const password = passwordInput.value;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+                if (error) throw new Error("Invalid email or password.");
+
+                // Mandatory Authorization Check
+                const isAdmin = await checkAdminRole(data.user.id);
+
+                if (!isAdmin) {
+                    await supabase.auth.signOut();
+                    throw new Error("Administrator access required.");
+                }
+
+                window.location.href = 'index.html';
+
+            } catch (err) {
+                showError(err.message);
+            }
+        });
+    </script>
+</body>
+</html>
