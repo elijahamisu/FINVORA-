@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Notifications | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        /* Layout */
+        .container { padding: 20px; max-width: 800px; margin: 0 auto; }
+        
+        /* Summary Card */
+        .summary-card { 
+            background: var(--bg-navy); border: 1px solid var(--glass-border); 
+            border-radius: 12px; padding: 20px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .summary-info h2 { font-size: 1.2rem; color: var(--gold-primary); }
+        .summary-info p { font-size: 0.8rem; color: var(--text-gray); }
+
+        /* Filters */
+        .filters { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; scrollbar-width: none; }
+        .filters::-webkit-scrollbar { display: none; }
+        .filter-chip { 
+            padding: 8px 16px; background: var(--bg-navy); border: 1px solid var(--glass-border); 
+            border-radius: 20px; font-size: 0.8rem; color: var(--text-gray); cursor: pointer; white-space: nowrap;
+        }
+        .filter-chip.active { background: var(--gold-gradient); color: #000; border: none; font-weight: 700; }
+
+        /* Notification List */
+        .notification-list { display: grid; gap: 12px; }
+        .notification-card { 
+            background: var(--bg-navy); border: 1px solid var(--glass-border); 
+            padding: 15px; border-radius: 12px; display: flex; gap: 15px;
+            cursor: pointer; position: relative; transition: 0.2s;
+        }
+        .notification-card.unread { border-color: var(--gold-primary); background: rgba(212, 175, 55, 0.05); }
+        .unread-dot { 
+            width: 8px; height: 8px; background: var(--gold-primary); 
+            border-radius: 50%; position: absolute; top: 15px; right: 15px;
+            display: none;
+        }
+        .notification-card.unread .unread-dot { display: block; }
+
+        .notif-icon { font-size: 1.2rem; min-width: 40px; height: 40px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .notif-content h4 { font-size: 0.9rem; margin-bottom: 4px; padding-right: 15px; }
+        .notif-content p { font-size: 0.8rem; color: var(--text-gray); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .notif-time { font-size: 0.7rem; color: var(--text-gray); margin-top: 8px; }
+
+        /* Actions */
+        .btn-text { background: none; border: none; color: var(--gold-primary); font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+        .load-more { width: 100%; padding: 15px; background: transparent; border: 1px dashed var(--gold-primary); color: var(--gold-primary); border-radius: 8px; margin-top: 20px; cursor: pointer; }
+
+        /* Sidebar (Drawer) */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 700; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-navy); border: 1px solid var(--gold-primary); width: 100%; max-width: 450px; border-radius: 16px; padding: 25px; }
+        .modal-body h3 { color: var(--gold-primary); margin-bottom: 10px; }
+        .modal-body p { color: var(--text-gray); line-height: 1.6; margin-bottom: 20px; }
+        .btn-gold { width: 100%; padding: 14px; background: var(--gold-gradient); border: none; border-radius: 8px; color: #000; font-weight: 700; cursor: pointer; }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="notifications.html" class="nav-link active">Notifications</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: #ff4d4d; margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="summary-card">
+                    <div class="summary-info">
+                        <h2 id="unreadCount">0 Unread</h2>
+                        <p id="totalCount">Total: 0 Notifications</p>
+                    </div>
+                    <button class="btn-text" id="markAllRead">Mark all as read</button>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-chip active" data-type="all">All</div>
+                    <div class="filter-chip" data-type="system">System</div>
+                    <div class="filter-chip" data-type="investment">Investment</div>
+                    <div class="filter-chip" data-type="earning">Earnings</div>
+                    <div class="filter-chip" data-type="payment">Payments</div>
+                </div>
+
+                <div class="notification-list" id="notifList">
+                    <p style="text-align: center; color: var(--text-gray); padding: 40px;">Loading notifications...</p>
+                </div>
+
+                <button class="load-more" id="loadMore" style="display: none;">Load More</button>
+
+                <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+                    <span style="font-size: 3rem;">🎉</span>
+                    <h3 style="margin-top: 10px;">You're all caught up!</h3>
+                    <p style="color: var(--text-gray); font-size: 0.8rem;">New activity updates will appear here.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal" id="notifModal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3 id="modalTitle">Notification Title</h3>
+                <p id="modalTime" style="font-size: 0.75rem; margin-bottom: 15px;"></p>
+                <p id="modalMessage">Full notification message goes here...</p>
+                <button class="btn-gold" id="closeModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+        import { formatDate } from './src/utils/format.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const notifList = document.getElementById('notifList');
+        const loadMore = document.getElementById('loadMore');
+        const emptyState = document.getElementById('emptyState');
+
+        let currentPage = 0;
+        const perPage = 10;
+        let currentFilter = 'all';
+
+        // Icons for types
+        const typeIcons = {
+            system: '📢',
+            investment: '📈',
+            earning: '💰',
+            payment: '💳',
+            security: '🛡️',
+            referral: '👥'
+        };
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+            fetchStats(session.user.id);
+            fetchNotifications(session.user.id);
+        }
+
+        async function fetchStats(userId) {
+            const { count: unread } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('is_read', false);
+            const { count: total } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId);
+            
+            document.getElementById('unreadCount').textContent = `${unread || 0} Unread`;
+            document.getElementById('totalCount').textContent = `Total: ${total || 0} Notifications`;
+        }
+
+        async function fetchNotifications(userId, append = false) {
+            let query = supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).range(currentPage * perPage, (currentPage + 1) * perPage - 1);
+
+            if (currentFilter !== 'all') {
+                query = query.eq('type', currentFilter);
+            }
+
+            const { data, error } = await query;
+
+            if (error) return console.error(error);
+
+            if (!append) notifList.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                if (!append) {
+                    notifList.style.display = 'none';
+                    emptyState.style.display = 'block';
+                }
+                loadMore.style.display = 'none';
+                return;
+            }
+
+            notifList.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            data.forEach(n => {
+                const card = document.createElement('div');
+                card.className = `notification-card ${!n.is_read ? 'unread' : ''}`;
+                card.innerHTML = `
+                    <div class="unread-dot"></div>
+                    <div class="notif-icon">${typeIcons[n.type] || '🔔'}</div>
+                    <div class="notif-content">
+                        <h4>${n.title}</h4>
+                        <p>${n.message}</p>
+                        <div class="notif-time">${formatDate(n.created_at)}</div>
+                    </div>
+                `;
+                card.onclick = () => openNotification(n);
+                notifList.appendChild(card);
+            });
+
+            loadMore.style.display = data.length === perPage ? 'block' : 'none';
+        }
+
+        async function openNotification(n) {
+            document.getElementById('modalTitle').textContent = n.title;
+            document.getElementById('modalMessage').textContent = n.message;
+            document.getElementById('modalTime').textContent = formatDate(n.created_at);
+            document.getElementById('notifModal').style.display = 'flex';
+
+            if (!n.is_read) {
+                await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', n.id);
+                // Refresh local UI state
+                const userId = (await auth.getUser()).id;
+                fetchStats(userId);
+            }
+        }
+
+        // Event Handlers
+        document.getElementById('menuToggle').onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+        document.getElementById('closeModal').onclick = () => document.getElementById('notifModal').style.display = 'none';
+        
+        document.getElementById('markAllRead').onclick = async () => {
+            const userId = (await auth.getUser()).id;
+            await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('user_id', userId).eq('is_read', false);
+            currentPage = 0;
+            fetchStats(userId);
+            fetchNotifications(userId);
+        };
+
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.onclick = async () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                currentFilter = chip.dataset.type;
+                currentPage = 0;
+                const userId = (await auth.getUser()).id;
+                fetchNotifications(userId);
+            };
+        });
+
+        loadMore.onclick = async () => {
+            currentPage++;
+            const userId = (await auth.getUser()).id;
+            fetchNotifications(userId, true);
+        };
+
+        document.getElementById('logoutBtn').onclick = async () => { await auth.signOut(); };
+
+        init();
+    </script>
+</body>
+</html>
