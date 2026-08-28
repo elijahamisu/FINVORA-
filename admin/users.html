@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manage Users | FINVORA Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --error: #ff4d4d;
+            --success: #00c853;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.2rem; text-decoration: none; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-label { font-size: 0.65rem; color: var(--text-gray); text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .stat-val { font-size: 1.1rem; font-weight: 700; color: var(--gold-primary); }
+
+        /* Search & Filter Area */
+        .controls { display: grid; gap: 12px; margin-bottom: 25px; }
+        .search-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; }
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .filter-select { background: var(--bg-navy); border: 1px solid var(--glass-border); color: var(--text-gray); padding: 10px; border-radius: 8px; font-size: 0.85rem; outline: none; }
+
+        /* User List (Mobile Card) */
+        .user-list { display: grid; gap: 15px; }
+        .user-card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 18px; }
+        .user-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .user-card-name { font-weight: 700; font-size: 1rem; color: var(--gold-primary); }
+        .user-card-sub { font-size: 0.8rem; color: var(--text-gray); margin-top: 2px; }
+        .badge { font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        .badge-active { background: rgba(0, 200, 83, 0.1); color: var(--success); }
+        .badge-suspended { background: rgba(255, 77, 77, 0.1); color: var(--error); }
+        
+        .user-card-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: 12px; }
+        .meta-item span { display: block; font-size: 0.7rem; color: var(--text-gray); text-transform: uppercase; margin-bottom: 2px; }
+        .meta-item b { font-size: 0.85rem; }
+
+        .btn-view { width: 100%; margin-top: 15px; padding: 12px; background: var(--gold-gradient); border: none; border-radius: 8px; color: #000; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-align: center; text-decoration: none; display: block; }
+
+        /* Desktop Table (Hidden on Mobile) */
+        .desktop-table-wrap { display: none; background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; font-size: 0.75rem; color: var(--gold-primary); background: rgba(255,255,255,0.02); text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+        
+        /* Pagination */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 30px; padding-bottom: 40px; }
+        .btn-page { background: none; border: 1px solid var(--glass-border); color: var(--gold-primary); padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+        .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Sidebar/Drawer Navigation */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 30px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 2px; font-size: 0.9rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; border-left: 3px solid var(--gold-primary); }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .controls { grid-template-columns: 1fr 500px; align-items: center; }
+            .user-list { display: none; }
+            .desktop-table-wrap { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="index.html" class="logo">FINVORA ADMIN</a>
+        <div style="font-size: 1.2rem;">👤</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 30px; display: block; text-align: center; font-size: 1.6rem;">FINVORA</div>
+            <nav>
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="users.html" class="nav-link active">Users</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="investments.html" class="nav-link">Investments</a>
+                <a href="deposits.html" class="nav-link">Deposits</a>
+                <a href="withdrawals.html" class="nav-link">Withdrawals</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-codes.html" class="nav-link">Gift Codes</a>
+                <a href="settings.html" class="nav-link">Settings</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 30px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <h1 style="font-family: 'Playfair Display'; font-size: 1.5rem; margin-bottom: 20px;">User Accounts</h1>
+
+                <!-- Stats Summary -->
+                <div class="stats-grid">
+                    <div class="stat-card"><span class="stat-label">Total</span><div class="stat-val" id="countTotal">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Active</span><div class="stat-val" id="countActive">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Suspended</span><div class="stat-val" id="countSuspended">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Joined Today</span><div class="stat-val" id="countToday">0</div></div>
+                </div>
+
+                <!-- Filters -->
+                <div class="controls">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search by name, email, or ref code...">
+                    <div class="filter-row">
+                        <select id="statusFilter" class="filter-select">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                        <select id="sortFilter" class="filter-select">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="balance">Highest Balance</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Content Container -->
+                <div id="userContainer">
+                    <!-- Mobile View -->
+                    <div class="user-list" id="mobileList"></div>
+                    
+                    <!-- Desktop View -->
+                    <div class="desktop-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Balance</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="desktopBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+                    <p style="color: var(--text-gray);">No users matching your criteria were found.</p>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="btn-page" id="prevPage">‹ Previous</button>
+                    <span id="pageInfo" style="font-size: 0.8rem; color: var(--text-gray);">Page 1</span>
+                    <button class="btn-page" id="nextPage">Next ›</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../src/lib/supabase.js';
+        import { formatCurrency } from '../src/utils/format.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const sortFilter = document.getElementById('sortFilter');
+        const mobileList = document.getElementById('mobileList');
+        const desktopBody = document.getElementById('desktopBody');
+
+        let currentPage = 0;
+        const perPage = 10;
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            
+            // Authorized role check
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+            if (!profile || profile.role !== 'admin') { window.location.href = 'login.html'; return; }
+
+            loadStats();
+            loadUsers();
+        }
+
+        async function loadStats() {
+            const { count: total } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+            const { count: active } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active');
+            const { count: suspended } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'suspended');
+            
+            const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+            const { count: today } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', startOfDay.toISOString());
+
+            document.getElementById('countTotal').textContent = total || 0;
+            document.getElementById('countActive').textContent = active || 0;
+            document.getElementById('countSuspended').textContent = suspended || 0;
+            document.getElementById('countToday').textContent = today || 0;
+        }
+
+        async function loadUsers() {
+            const status = statusFilter.value;
+            const search = searchInput.value.toLowerCase();
+            const sort = sortFilter.value;
+
+            let query = supabase.from('profiles').select('*', { count: 'exact' });
+
+            if (status !== 'all') query = query.eq('status', status);
+            if (search) query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,referral_code.ilike.%${search}%`);
+
+            if (sort === 'newest') query = query.order('created_at', { ascending: false });
+            else if (sort === 'oldest') query = query.order('created_at', { ascending: true });
+            else if (sort === 'balance') query = query.order('wallet_balance', { ascending: false });
+
+            const { data, count, error } = await query.range(currentPage * perPage, (currentPage + 1) * perPage - 1);
+
+            if (data) {
+                renderData(data);
+                updatePagination(count);
+            }
+        }
+
+        function renderData(users) {
+            mobileList.innerHTML = '';
+            desktopBody.innerHTML = '';
+            document.getElementById('emptyState').style.display = users.length === 0 ? 'block' : 'none';
+
+            users.forEach(user => {
+                const statusBadge = `<span class="badge badge-${user.status || 'active'}">${user.status || 'active'}</span>`;
+                const dateJoined = new Date(user.created_at).toLocaleDateString();
+                const balance = formatCurrency(user.wallet_balance || 0);
+
+                // Mobile Card
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                card.innerHTML = `
+                    <div class="user-card-header">
+                        <div>
+                            <div class="user-card-name">${user.full_name}</div>
+                            <div class="user-card-sub">${user.email}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <div class="user-card-meta">
+                        <div class="meta-item"><span>Balance</span><b>${balance}</b></div>
+                        <div class="meta-item"><span>Joined</span><b>${dateJoined}</b></div>
+                    </div>
+                    <a href="user-details.html?id=${user.id}" class="btn-view">VIEW DETAILS</a>
+                `;
+                mobileList.appendChild(card);
+
+                // Desktop Row
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div style="font-weight:700;">${user.full_name}</div>
+                        <div style="font-size:0.75rem; color:var(--text-gray);">${user.email}</div>
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td>${dateJoined}</td>
+                    <td><b>${balance}</b></td>
+                    <td><a href="user-details.html?id=${user.id}" class="btn-page">Details</a></td>
+                `;
+                desktopBody.appendChild(row);
+            });
+        }
+
+        function updatePagination(total) {
+            const totalPages = Math.ceil(total / perPage);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages || 1}`;
+            document.getElementById('prevPage').disabled = currentPage === 0;
+            document.getElementById('nextPage').disabled = (currentPage + 1) >= totalPages;
+        }
+
+        // Listeners
+        menuToggle.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+        document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
+
+        searchInput.oninput = () => { currentPage = 0; loadUsers(); };
+        statusFilter.onchange = () => { currentPage = 0; loadUsers(); };
+        sortFilter.onchange = () => { currentPage = 0; loadUsers(); };
+        document.getElementById('prevPage').onclick = () => { if (currentPage > 0) { currentPage--; loadUsers(); } };
+        document.getElementById('nextPage').onclick = () => { currentPage++; loadUsers(); };
+
+        init();
+    </script>
+</body>
+</html>
