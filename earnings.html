@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Earnings | FINVORA</title>
+    <title>Earnings — FINVORA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #020408;
+            --bg-dark: #030508;
             --bg-navy: #050a14;
             --bg-sidebar: #03060d;
             --gold-primary: #D4AF37;
             --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
             --text-white: #ffffff;
             --text-gray: #a0aec0;
-            --glass: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(212, 175, 55, 0.15);
             --sidebar-width: 260px;
         }
@@ -27,60 +26,64 @@
         /* Mobile Header */
         header {
             position: sticky; top: 0; z-index: 1000;
-            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            background: rgba(3, 5, 8, 0.95); backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--glass-border);
             padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
         }
-        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; letter-spacing: 1px; }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
         .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
 
-        /* Container */
         .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
         .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        
+        /* Summary Section */
+        .summary-card { 
+            background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); 
+            border-left: 4px solid var(--gold-primary);
+            padding: 25px; 
+        }
+        .card-label { font-size: 0.8rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; }
+        .main-amount { font-size: 2.2rem; font-weight: 700; color: var(--gold-primary); margin: 5px 0; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        .stat-box { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-label { font-size: 0.7rem; color: var(--text-gray); margin-bottom: 4px; }
+        .stat-val { font-size: 0.9rem; font-weight: 600; }
 
-        /* Summary Card */
-        .summary-card { background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); text-align: center; padding: 30px 20px; }
-        .summary-label { font-size: 0.8rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1.5px; }
-        .summary-amount { font-size: 2.2rem; font-weight: 700; color: var(--gold-primary); margin: 10px 0; }
-        .today-box { display: inline-block; background: rgba(212, 175, 55, 0.1); padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--gold-primary); }
+        /* Investment Progress */
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold-primary); margin: 25px 0 15px; display: flex; align-items: center; gap: 10px; }
+        .progress-card { padding: 20px; }
+        .plan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .plan-name { font-weight: 700; font-size: 1.1rem; }
+        
+        .progress-container { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin: 15px 0; }
+        .progress-fill { height: 100%; background: var(--gold-gradient); transition: width 1s ease; }
+        
+        .progress-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 0.75rem; color: var(--text-gray); }
+        .meta-item b { color: var(--text-white); }
 
-        /* Progress Card */
-        .progress-item { margin-top: 15px; }
-        .progress-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
-        .progress-bar-bg { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--gold-gradient); width: 0%; transition: width 1s ease-out; }
-        .progress-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; font-size: 0.75rem; color: var(--text-gray); }
-
-        /* List Items */
-        .section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold-primary); margin: 25px 0 15px; }
+        /* Earnings History List */
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .history-item:last-child { border-bottom: none; }
-        .hist-info h4 { font-size: 0.9rem; font-weight: 600; }
-        .hist-info p { font-size: 0.75rem; color: var(--text-gray); }
+        .history-item:last-child { border: none; }
+        .hist-info h4 { font-size: 0.9rem; margin-bottom: 3px; }
+        .hist-info p { font-size: 0.7rem; color: var(--text-gray); }
         .hist-amt { font-weight: 700; color: var(--gold-primary); }
 
-        /* Quick Actions Grid */
-        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
-        .action-item { background: var(--glass); padding: 15px 5px; border-radius: 12px; text-align: center; text-decoration: none; border: 1px solid transparent; }
-        .action-item:active { border-color: var(--gold-primary); }
-        .action-icon { font-size: 1.4rem; display: block; margin-bottom: 5px; }
-        .action-label { font-size: 0.65rem; color: var(--text-white); font-weight: 500; }
-
-        /* Navigation Drawer */
-        .sidebar { position: fixed; top: 0; left: -100%; width: 80%; max-width: 300px; height: 100vh; background: var(--bg-navy); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); }
+        /* Navigation Drawer (Mobile) */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 80%; max-width: 300px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
         .sidebar.active { left: 0; }
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
         .overlay.active { display: block; }
-        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-weight: 500; }
-        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.95rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; }
 
         /* Desktop Adjustments */
         @media (min-width: 992px) {
             .layout-wrapper { display: flex; }
-            .sidebar { left: 0; position: sticky; height: 100vh; }
-            .overlay, header { display: none; }
-            .main-content { flex: 1; margin-left: 0; }
-            .earnings-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+            .earnings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         }
     </style>
 </head>
@@ -115,29 +118,42 @@
         <main class="main-content">
             <div class="container">
                 
-                <div class="earnings-layout">
+                <div class="earnings-grid">
                     <div>
                         <!-- Summary -->
                         <div class="card summary-card">
-                            <span class="summary-label">Total Accumulated Earnings</span>
-                            <h1 class="summary-amount" id="totalEarned">₦0.00</h1>
-                            <div class="today-box">Today: <span id="todayEarned">₦0.00</span></div>
+                            <span class="card-label">Total Earnings</span>
+                            <h1 class="main-amount" id="totalEarned">₦0.00</h1>
+                            
+                            <div class="stat-grid">
+                                <div class="stat-box">
+                                    <p class="stat-label">Today's Earnings</p>
+                                    <p class="stat-val" id="todayEarned">₦0.00</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-label">Wallet Balance</p>
+                                    <p class="stat-val" id="walletBalance">₦0.00</p>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <a href="withdraw.html" class="nav-link" style="background: var(--gold-gradient); color: #000; text-align: center; padding: 12px; font-weight: 700;">Withdraw</a>
+                                <a href="wallet.html" class="nav-link" style="border: 1px solid var(--gold-primary); text-align: center; padding: 12px; color: var(--gold-primary);">Wallet</a>
+                            </div>
                         </div>
 
-                        <!-- Quick Grid -->
-                        <div class="action-grid">
-                            <a href="investment.html" class="action-item"><span class="action-icon">📈</span><span class="action-label">Invest</span></a>
-                            <a href="wallet.html" class="action-item"><span class="action-icon">💳</span><span class="action-label">Wallet</span></a>
-                            <a href="withdraw.html" class="action-item"><span class="action-icon">🏦</span><span class="action-label">Withdraw</span></a>
-                            <a href="gift-code.html" class="action-item" style="border-color: var(--gold-primary);"><span class="action-icon">🎁</span><span class="action-label">Gift Code</span></a>
+                        <!-- Gift Code Section -->
+                        <div class="card" style="border-style: dashed; background: rgba(212, 175, 55, 0.05); text-align: center;">
+                            <p class="card-label" style="margin-bottom: 10px;">Have a gift code?</p>
+                            <a href="gift-code.html" style="color: var(--gold-primary); text-decoration: none; font-weight: 700; font-size: 0.9rem;">Redeem Reward →</a>
                         </div>
                     </div>
 
                     <div>
-                        <!-- Active Performance -->
-                        <h2 class="section-title">Investment Progress</h2>
-                        <div id="progressContainer">
-                            <p class="summary-label" style="text-align: center; padding: 20px;">Loading performance...</p>
+                        <!-- Active Progress -->
+                        <h2 class="section-title">Investment Performance</h2>
+                        <div id="progressList">
+                            <p class="card-label" style="text-align: center; padding: 30px;">Loading investments...</p>
                         </div>
                     </div>
                 </div>
@@ -146,20 +162,15 @@
                 <h2 class="section-title">Earnings History</h2>
                 <div class="card">
                     <div id="historyList">
-                        <p class="summary-label" style="text-align: center; padding: 20px;">Loading history...</p>
+                        <p class="card-label" style="text-align: center; padding: 30px;">Loading history...</p>
                     </div>
+                    <a href="transactions.html" style="display: block; text-align: center; margin-top: 15px; color: var(--gold-primary); font-size: 0.8rem; text-decoration: none;">View All Transactions</a>
                 </div>
 
-                <!-- Promo -->
-                <div class="card" style="background: rgba(212, 175, 55, 0.05); text-align: center; border-style: dashed;">
-                    <p class="summary-label" style="margin-bottom: 10px;">Have a gift code?</p>
-                    <a href="gift-code.html" class="btn-invest" style="color: var(--gold-primary); text-decoration: none; font-weight: 700; font-size: 0.9rem;">Redeem Reward</a>
-                </div>
-
-                <!-- Info -->
-                <div style="margin-top: 40px; font-size: 0.8rem; color: var(--text-gray); line-height: 1.6;">
-                    <h4 style="color: var(--gold-primary); margin-bottom: 10px;">How Earnings Work</h4>
-                    <p>Earnings are automatically recorded according to your active investment plan. Each cycle lasts 20 days. You can track your daily progress and accumulated returns here.</p>
+                <!-- Help -->
+                <div class="card" style="font-size: 0.8rem; color: var(--text-gray); line-height: 1.6;">
+                    <h4 style="color: var(--gold-primary); margin-bottom: 8px;">How Earnings Work</h4>
+                    <p>Daily earnings are automatically calculated based on your active investment plans. Once a plan reaches its 20-day duration, it is marked as completed. You can track all credits in the history section above.</p>
                 </div>
             </div>
         </main>
@@ -188,53 +199,66 @@
 
             try {
                 // 1. Fetch Profile for totals
-                const { data: profile } = await supabase.from('profiles').select('total_earnings').eq('id', user.id).single();
-                if (profile) document.getElementById('totalEarned').textContent = formatCurrency(profile.total_earnings);
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                if (profile) {
+                    document.getElementById('totalEarned').textContent = formatCurrency(profile.total_earnings);
+                    document.getElementById('walletBalance').textContent = formatCurrency(profile.wallet_balance);
+                }
 
                 // 2. Fetch Active Investments
                 const { data: investments } = await supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active');
                 renderProgress(investments);
 
-                // 3. Fetch History (Transactions type 'earning')
-                const { data: history } = await supabase.from('transactions').select('*').eq('user_id', user.id).eq('type', 'earning').order('created_at', { ascending: false }).limit(10);
-                renderHistory(history);
+                // 3. Fetch Earnings History (Transactions type: earning)
+                const { data: earnings } = await supabase.from('transactions')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('type', 'earning')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                renderHistory(earnings);
 
-                // Calculate Today's (Filter history for today)
+                // 4. Calculate Today's Earnings from history
                 const today = new Date().toDateString();
-                const todayVal = history?.filter(h => new Date(h.created_at).toDateString() === today).reduce((acc, curr) => acc + curr.amount, 0);
-                document.getElementById('todayEarned').textContent = formatCurrency(todayVal || 0);
+                const todayTotal = earnings?.filter(e => new Date(e.created_at).toDateString() === today)
+                    .reduce((acc, curr) => acc + curr.amount, 0) || 0;
+                document.getElementById('todayEarned').textContent = formatCurrency(todayTotal);
 
             } catch (err) {
-                console.error(err);
+                console.error("Error loading earnings:", err);
             }
         }
 
         function renderProgress(items) {
-            const container = document.getElementById('progressContainer');
+            const container = document.getElementById('progressList');
             if (!items || items.length === 0) {
-                container.innerHTML = '<div class="card" style="text-align: center;"><p class="summary-label">No active investments found.</p><a href="plans.html" style="color: var(--gold-primary); text-decoration: none; font-size: 0.8rem; margin-top: 10px; display: block;">View Plans</a></div>';
+                container.innerHTML = '<div class="card" style="text-align: center;"><p class="card-label">No active investments found.</p><a href="plans.html" style="color: var(--gold-primary); text-decoration: none; font-size: 0.8rem; margin-top: 10px; display: block;">Start Investing →</a></div>';
                 return;
             }
+
             container.innerHTML = items.map(inv => {
-                const start = new Date(inv.created_at);
-                const now = new Date();
-                const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-                const progress = Math.min(Math.round((elapsed / 20) * 100), 100);
+                const startDate = new Date(inv.created_at);
+                const today = new Date();
+                const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                const progress = Math.min(Math.round((daysDiff / 20) * 100), 100);
 
                 return `
-                    <div class="card progress-item">
-                        <div class="progress-header">
-                            <span>${inv.plan_name}</span>
-                            <span class="text-gold">${progress}% Complete</span>
+                    <div class="card progress-card">
+                        <div class="plan-header">
+                            <span class="plan-name">${inv.plan_name}</span>
+                            <span class="status-badge" style="background: rgba(212,175,55,0.1); color: var(--gold-primary); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;">ACTIVE</span>
                         </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: ${progress}%"></div>
+                        <div class="progress-meta">
+                            <div class="meta-item">Daily Profit: <b>${formatCurrency(inv.daily_profit)}</b></div>
+                            <div class="meta-item">Earned: <b>${formatCurrency(inv.amount_earned)}</b></div>
                         </div>
-                        <div class="progress-details">
-                            <div>Daily: ${formatCurrency(inv.daily_profit)}</div>
-                            <div>Total Return: ${formatCurrency(inv.total_expected_return)}</div>
-                            <div>Elapsed: ${elapsed} / 20 Days</div>
-                            <div>Earned so far: ${formatCurrency(inv.amount_earned)}</div>
+                        <div class="progress-container">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="progress-meta">
+                            <div class="meta-item">Progress: <b>${daysDiff} / 20 Days</b></div>
+                            <div class="meta-item" style="text-align: right;"><b>${progress}%</b></div>
                         </div>
                     </div>
                 `;
@@ -244,14 +268,15 @@
         function renderHistory(items) {
             const container = document.getElementById('historyList');
             if (!items || items.length === 0) {
-                container.innerHTML = '<p class="summary-label" style="text-align: center;">No earnings recorded yet.</p>';
+                container.innerHTML = '<p class="card-label" style="text-align: center; padding: 20px;">No earnings history yet.</p>';
                 return;
             }
+
             container.innerHTML = items.map(h => `
                 <div class="history-item">
                     <div class="hist-info">
                         <h4>Daily Earning Credited</h4>
-                        <p>${new Date(h.created_at).toLocaleDateString()} - ${new Date(h.created_at).toLocaleTimeString()}</p>
+                        <p>${new Date(h.created_at).toLocaleDateString()} • ${new Date(h.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
                     <div class="hist-amt">+${formatCurrency(h.amount)}</div>
                 </div>
