@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Profile | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --error: #ff4d4d;
+            --success: #00c853;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 900px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; margin-bottom: 20px; }
+
+        /* Profile Summary */
+        .profile-hero { text-align: center; background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); }
+        .avatar-circle { width: 80px; height: 80px; background: var(--gold-gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 2rem; color: #000; font-weight: 700; }
+        .profile-hero h2 { font-size: 1.4rem; margin-bottom: 5px; }
+        .status-badge { display: inline-block; padding: 4px 12px; background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-top: 5px; }
+
+        /* Forms */
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gold-primary); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 20px; }
+        .label { display: block; font-size: 0.8rem; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .input-field { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 14px 15px; border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.3s; }
+        .input-field:focus { border-color: var(--gold-primary); background: rgba(255,255,255,0.08); }
+        .input-field:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-gold { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: 700; font-size: 0.9rem; background: var(--gold-gradient); color: #000; cursor: pointer; transition: 0.3s; }
+        .btn-gold:disabled { opacity: 0.6; }
+
+        /* List Items (Non-editable) */
+        .data-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .data-row:last-child { border-bottom: none; }
+        .data-label { font-size: 0.85rem; color: var(--text-gray); }
+        .data-value { font-size: 0.85rem; font-weight: 600; }
+
+        /* Navigation Drawer */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 700; }
+
+        /* Feedback */
+        .msg { font-size: 0.85rem; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; text-align: center; }
+        .msg-success { display: block; background: rgba(0, 200, 83, 0.1); color: var(--success); border: 1px solid var(--success); }
+        .msg-error { display: block; background: rgba(255, 77, 77, 0.1); color: var(--error); border: 1px solid var(--error); }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; margin-left: 0; }
+            .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="notifications.html" class="nav-link">Notifications</a>
+                <a href="profile.html" class="nav-link active">Profile</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <div id="statusMsg" class="msg"></div>
+
+                <div class="card profile-hero">
+                    <div class="avatar-circle" id="userInitial">U</div>
+                    <h2 id="heroName">Loading...</h2>
+                    <p id="heroEmail" style="color: var(--text-gray); font-size: 0.85rem;"></p>
+                    <div class="status-badge" id="accountStatus">Active Member</div>
+                </div>
+
+                <div class="profile-grid">
+                    <div>
+                        <!-- Personal Information -->
+                        <div class="card">
+                            <h3 class="section-title">Personal Information</h3>
+                            <form id="personalForm">
+                                <div class="form-group">
+                                    <label class="label">Full Name</label>
+                                    <input type="text" id="fullName" class="input-field" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="label">Username</label>
+                                    <input type="text" id="username" class="input-field" placeholder="Create a username">
+                                </div>
+                                <div class="form-group">
+                                    <label class="label">Phone Number</label>
+                                    <input type="tel" id="phone" class="input-field">
+                                </div>
+                                <div class="form-group">
+                                    <label class="label">Email Address</label>
+                                    <input type="email" id="email" class="input-field" disabled>
+                                    <span style="font-size: 0.7rem; color: var(--text-gray); margin-top: 5px; display: block;">Email changes require authentication.</span>
+                                </div>
+                                <button type="submit" class="btn-gold" id="savePersonal">SAVE CHANGES</button>
+                            </form>
+                        </div>
+
+                        <!-- Withdrawal Account -->
+                        <div class="card">
+                            <h3 class="section-title">Withdrawal Account</h3>
+                            <form id="payoutForm">
+                                <div class="form-group">
+                                    <label class="label">Bank Name</label>
+                                    <input type="text" id="bankName" class="input-field" placeholder="Enter bank name">
+                                </div>
+                                <div class="form-group">
+                                    <label class="label">Account Number</label>
+                                    <input type="number" id="accNumber" class="input-field" placeholder="10-digit number">
+                                </div>
+                                <div class="form-group">
+                                    <label class="label">Account Name</label>
+                                    <input type="text" id="accName" class="input-field" placeholder="Full account name">
+                                </div>
+                                <button type="submit" class="btn-gold" id="savePayout">UPDATE PAYOUT DETAILS</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Account Details -->
+                        <div class="card">
+                            <h3 class="section-title">Account Information</h3>
+                            <div class="data-row">
+                                <span class="data-label">Account ID</span>
+                                <span class="data-value" id="userIdDisplay">---</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">Registration Date</span>
+                                <span class="data-value" id="joinDate">---</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">Referral Code</span>
+                                <span class="data-value" id="refCode" style="color: var(--gold-primary);">---</span>
+                            </div>
+                            <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <a href="referrals.html" class="btn-gold" style="text-decoration: none; text-align: center; padding: 10px; font-size: 0.8rem;">REFERRALS</a>
+                                <a href="gift-code.html" class="btn-gold" style="text-decoration: none; text-align: center; padding: 10px; font-size: 0.8rem; background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary);">GIFT CODE</a>
+                            </div>
+                        </div>
+
+                        <!-- Security -->
+                        <div class="card">
+                            <h3 class="section-title">Security</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 20px;">Manage your account access and security preferences.</p>
+                            <button class="btn-gold" id="changePassword" style="margin-bottom: 10px; background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary);">CHANGE PASSWORD</button>
+                            <button class="btn-gold" id="logoutBtnAlt" style="background: rgba(255, 77, 77, 0.1); color: var(--error);">LOG OUT OF ALL SESSIONS</button>
+                        </div>
+
+                        <!-- Support -->
+                        <div class="card" style="border-style: dashed; text-align: center;">
+                            <p style="font-size: 0.85rem; color: var(--text-gray);">Need assistance with your account?</p>
+                            <a href="support.html" style="color: var(--gold-primary); text-decoration: none; font-weight: 700; font-size: 0.9rem; margin-top: 5px; display: inline-block;">Contact FINVORA Support</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const statusMsg = document.getElementById('statusMsg');
+
+        // Navigation
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        document.getElementById('menuToggle').onclick = toggleMenu;
+        overlay.onclick = toggleMenu;
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+            loadProfile(session.user.id);
+        }
+
+        async function loadProfile(userId) {
+            const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+            if (error) return showStatus("Error loading profile", "error");
+
+            // Hero Section
+            document.getElementById('userInitial').textContent = profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U';
+            document.getElementById('heroName').textContent = profile.full_name || "FINVORA Member";
+            document.getElementById('heroEmail').textContent = profile.email;
+            document.getElementById('accountStatus').textContent = profile.status || "Active Member";
+
+            // Personal Info Form
+            document.getElementById('fullName').value = profile.full_name || '';
+            document.getElementById('username').value = profile.username || '';
+            document.getElementById('phone').value = profile.phone || '';
+            document.getElementById('email').value = profile.email || '';
+
+            // Payout Form
+            document.getElementById('bankName').value = profile.bank_name || '';
+            document.getElementById('accNumber').value = profile.account_number || '';
+            document.getElementById('accName').value = profile.account_name || '';
+
+            // Account Metadata
+            document.getElementById('userIdDisplay').textContent = profile.id.substring(0, 13) + '...';
+            document.getElementById('joinDate').textContent = new Date(profile.created_at).toLocaleDateString();
+            document.getElementById('refCode').textContent = profile.referral_code || '---';
+        }
+
+        function showStatus(text, type) {
+            statusMsg.textContent = text;
+            statusMsg.className = `msg msg-${type}`;
+            setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
+        }
+
+        // Save Personal Information
+        document.getElementById('personalForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('savePersonal');
+            btn.disabled = true;
+            btn.textContent = "SAVING...";
+
+            const { data: { user } } = await supabase.auth.getUser();
+            const updates = {
+                full_name: document.getElementById('fullName').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+            
+            btn.disabled = false;
+            btn.textContent = "SAVE CHANGES";
+            
+            if (error) showStatus("Update failed: " + error.message, "error");
+            else {
+                showStatus("Profile updated successfully", "success");
+                loadProfile(user.id);
+            }
+        };
+
+        // Save Payout Details
+        document.getElementById('payoutForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('savePayout');
+            btn.disabled = true;
+
+            const { data: { user } } = await supabase.auth.getUser();
+            const updates = {
+                bank_name: document.getElementById('bankName').value.trim(),
+                account_number: document.getElementById('accNumber').value.trim(),
+                account_name: document.getElementById('accName').value.trim(),
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+            
+            btn.disabled = false;
+            if (error) showStatus("Payout update failed", "error");
+            else showStatus("Payout details updated", "success");
+        };
+
+        // Logout
+        const logoutAction = async (e) => {
+            e.preventDefault();
+            await auth.signOut();
+        };
+        document.getElementById('logoutBtn').onclick = logoutAction;
+        document.getElementById('logoutBtnAlt').onclick = logoutAction;
+
+        // Change Password
+        document.getElementById('changePassword').onclick = async () => {
+            const { data, error } = await supabase.auth.resetPasswordForEmail((await auth.getUser()).email, {
+                redirectTo: `${window.location.origin}/profile.html`,
+            });
+            if (error) showStatus("Error: " + error.message, "error");
+            else showStatus("Password reset link sent to your email", "success");
+        };
+
+        init();
+    </script>
+</body>
+</html>
