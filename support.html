@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Support | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --error: #ff4d4d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 900px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; margin-bottom: 20px; }
+
+        /* Hero */
+        .hero-card { text-align: center; background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); padding: 40px 20px; }
+        .hero-card h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold-primary); margin-bottom: 10px; }
+        .hero-card p { font-size: 0.85rem; color: var(--text-gray); }
+
+        /* FAQ Accordion */
+        .faq-item { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .faq-question { padding: 15px 0; display: flex; justify-content: space-between; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--gold-primary); }
+        .faq-answer { height: 0; overflow: hidden; font-size: 0.85rem; color: var(--text-gray); transition: height 0.3s ease; padding-bottom: 0; }
+        .faq-item.active .faq-answer { height: auto; padding-bottom: 15px; }
+
+        /* Support Form */
+        .form-group { margin-bottom: 20px; }
+        .label { display: block; font-size: 0.75rem; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .input-field { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 14px; border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; }
+        .input-field:focus { border-color: var(--gold-primary); }
+        .btn-gold { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: 700; font-size: 0.9rem; background: var(--gold-gradient); color: #000; cursor: pointer; }
+        .btn-gold:disabled { opacity: 0.6; }
+
+        /* History Items */
+        .ticket-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .ticket-item:last-child { border: none; }
+        .ticket-info h4 { font-size: 0.9rem; font-weight: 600; }
+        .ticket-info p { font-size: 0.7rem; color: var(--text-gray); margin-top: 4px; }
+        .status-badge { font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        .status-open { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+
+        /* Sidebar Navigation */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 700; }
+
+        /* Desktop Adjustments */
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; margin-left: 0; }
+            .support-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="notifications.html" class="nav-link">Notifications</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+                <a href="support.html" class="nav-link active">Support</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="card hero-card">
+                    <h1>FINVORA SUPPORT</h1>
+                    <p>Need help? Find answers in our FAQ or submit a request to our support team.</p>
+                </div>
+
+                <div class="support-grid">
+                    <div>
+                        <!-- FAQ -->
+                        <div class="card">
+                            <h2 style="font-family: 'Playfair Display'; margin-bottom: 15px; color: var(--gold-primary);">Frequently Asked Questions</h2>
+                            <div class="faq-list">
+                                <div class="faq-item">
+                                    <div class="faq-question">How do I make a deposit? <span>+</span></div>
+                                    <div class="faq-answer">Navigate to the 'Deposit' page, enter the amount (min ₦2,800), and follow the payment instructions. Your wallet will be credited once confirmed.</div>
+                                </div>
+                                <div class="faq-item">
+                                    <div class="faq-question">When do I receive earnings? <span>+</span></div>
+                                    <div class="faq-answer">Earnings are credited daily to your account based on your active investment plan. Each plan cycle lasts 20 days.</div>
+                                </div>
+                                <div class="faq-item">
+                                    <div class="faq-question">How do I withdraw funds? <span>+</span></div>
+                                    <div class="faq-answer">Go to the 'Withdraw' page, enter an amount (min ₦650), and provide your payout bank details. Processing takes up to 24 hours.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Request Form -->
+                        <div class="card">
+                            <h2 style="font-family: 'Playfair Display'; margin-bottom: 20px; color: var(--gold-primary);">Submit a Support Request</h2>
+                            <form id="supportForm">
+                                <div class="form-group">
+                                    <label class="label">Category</label>
+                                    <select id="category" class="input-field" style="background-image: none;">
+                                        <option value="account">Account Access</option>
+                                        <option value="deposit">Deposit Issue</option>
+                                        <option value="withdrawal">Withdrawal Status</option>
+                                        <option value="investment">Investment Plan</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="label">Subject</label>
+                                    <input type="text" id="subject" class="input-field" placeholder="Brief summary" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="label">Message</label>
+                                    <textarea id="message" class="input-field" rows="4" placeholder="Describe your issue in detail..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn-gold" id="submitBtn">SEND REQUEST</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Support Channels -->
+                        <div class="card" style="border-style: dashed; text-align: center;">
+                            <h3 style="font-size: 1rem; color: var(--gold-primary); margin-bottom: 10px;">Direct Channels</h3>
+                            <p id="channelDisplay" style="font-size: 0.85rem; color: var(--text-gray);">Official support channels will be listed here once configured.</p>
+                        </div>
+
+                        <!-- History -->
+                        <div class="card">
+                            <h2 style="font-family: 'Playfair Display'; margin-bottom: 15px; color: var(--gold-primary);">Your Tickets</h2>
+                            <div id="ticketList">
+                                <p style="text-align: center; color: var(--text-gray); padding: 20px; font-size: 0.85rem;">Loading your tickets...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const ticketList = document.getElementById('ticketList');
+        const supportForm = document.getElementById('supportForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Navigation
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        menuToggle?.addEventListener('click', toggleMenu);
+        overlay?.addEventListener('click', toggleMenu);
+        document.getElementById('logoutBtn').onclick = async () => { await auth.signOut(); };
+
+        // FAQ logic
+        document.querySelectorAll('.faq-question').forEach(q => {
+            q.onclick = () => {
+                q.parentElement.classList.toggle('active');
+                q.querySelector('span').textContent = q.parentElement.classList.contains('active') ? '-' : '+';
+            };
+        });
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+            fetchTickets(session.user.id);
+        }
+
+        async function fetchTickets(userId) {
+            const { data, error } = await supabase.from('support_tickets').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            
+            if (error) return console.error(error);
+
+            if (!data || data.length === 0) {
+                ticketList.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 20px; font-size: 0.85rem;">No support requests yet.</p>';
+                return;
+            }
+
+            ticketList.innerHTML = data.map(t => `
+                <div class="ticket-item">
+                    <div class="ticket-info">
+                        <h4>${t.subject}</h4>
+                        <p>Ref: ${t.reference} • ${new Date(t.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <span class="status-badge status-open">${t.status}</span>
+                </div>
+            `).join('');
+        }
+
+        supportForm.onsubmit = async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'SENDING...';
+
+            try {
+                const user = (await auth.getUser());
+                const ref = `FIN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+                
+                const { error } = await supabase.from('support_tickets').insert([{
+                    user_id: user.id,
+                    reference: ref,
+                    subject: document.getElementById('subject').value.trim(),
+                    category: document.getElementById('category').value,
+                    message: document.getElementById('message').value.trim(),
+                    status: 'Open'
+                }]);
+
+                if (error) throw error;
+
+                alert(`Request Submitted. Ref: ${ref}`);
+                supportForm.reset();
+                fetchTickets(user.id);
+
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'SEND REQUEST';
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>
