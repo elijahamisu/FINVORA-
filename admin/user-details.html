@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>User Details | FINVORA Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --error: #ff4d4d;
+            --success: #00c853;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { color: var(--gold-primary); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.1rem; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+
+        /* Profile Header */
+        .profile-card { text-align: center; background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); position: relative; }
+        .avatar { width: 70px; height: 80px; background: var(--gold-gradient); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 2rem; color: #000; font-weight: 700; }
+        .profile-card h2 { font-size: 1.3rem; margin-bottom: 5px; }
+        .profile-card p { font-size: 0.8rem; color: var(--text-gray); }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
+        .badge-active { background: rgba(0, 200, 83, 0.1); color: var(--success); }
+        .badge-suspended { background: rgba(255, 77, 77, 0.1); color: var(--error); }
+
+        /* Summary Grid */
+        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .sum-box { background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; }
+        .sum-label { font-size: 0.65rem; color: var(--text-gray); text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .sum-val { font-size: 1rem; font-weight: 700; color: var(--gold-primary); }
+
+        /* Section Headings */
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gold-primary); margin: 25px 0 15px; display: flex; justify-content: space-between; align-items: center; }
+        .view-link { font-size: 0.75rem; color: var(--text-gray); text-decoration: none; border-bottom: 1px solid var(--text-gray); }
+
+        /* Data Lists (Mobile) */
+        .list-item { padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .list-item:last-child { border: none; }
+        .item-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .item-main { font-size: 0.85rem; font-weight: 600; }
+        .item-sub { font-size: 0.7rem; color: var(--text-gray); }
+        
+        /* Actions */
+        .btn-action { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.3s; margin-bottom: 10px; }
+        .btn-suspend { background: rgba(255, 77, 77, 0.1); color: var(--error); border: 1px solid var(--error); }
+        .btn-restore { background: rgba(0, 200, 83, 0.1); color: var(--success); border: 1px solid var(--success); }
+
+        /* Sidebar Navigation */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 30px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 2px; font-size: 0.9rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; border-left: 3px solid var(--gold-primary); }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+            .summary-grid { grid-template-columns: repeat(4, 1fr); }
+            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="header-left">
+            <a href="users.html" class="back-btn">← Users</a>
+            <span class="logo">DETAILS</span>
+        </div>
+        <div class="menu-btn" id="menuToggle">☰</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 30px; display: block; text-align: center; font-size: 1.6rem;">FINVORA</div>
+            <nav>
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="users.html" class="nav-link active">Users</a>
+                <a href="investments.html" class="nav-link">Investments</a>
+                <a href="deposits.html" class="nav-link">Deposits</a>
+                <a href="withdrawals.html" class="nav-link">Withdrawals</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-codes.html" class="nav-link">Gift Codes</a>
+                <a href="settings.html" class="nav-link">Settings</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 30px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                
+                <!-- User Profile Header -->
+                <div class="card profile-card">
+                    <div class="avatar" id="userInitial">U</div>
+                    <h2 id="userName">Loading Name...</h2>
+                    <p id="userEmail">Loading Email...</p>
+                    <div id="statusBadge"></div>
+                    <div style="font-size: 0.7rem; color: var(--text-gray); margin-top: 15px;">Ref: <span id="userRef" style="color: var(--gold-primary);">---</span></div>
+                    <button id="refreshBtn" style="background: none; border: 1px solid var(--glass-border); color: var(--gold-primary); font-size: 0.7rem; padding: 4px 10px; border-radius: 4px; margin-top: 10px; cursor: pointer;">REFRESH DATA</button>
+                </div>
+
+                <!-- Summaries -->
+                <div class="summary-grid">
+                    <div class="sum-box"><span class="sum-label">Wallet Balance</span><div class="sum-val" id="sumBalance">₦0.00</div></div>
+                    <div class="sum-box"><span class="sum-label">Total Deposits</span><div class="sum-val" id="sumDeposits">₦0.00</div></div>
+                    <div class="sum-box"><span class="sum-label">Active Inv.</span><div class="sum-val" id="sumInvested">₦0.00</div></div>
+                    <div class="sum-box"><span class="sum-label">Total Earnings</span><div class="sum-val" id="sumEarnings">₦0.00</div></div>
+                </div>
+
+                <div class="details-grid">
+                    <div>
+                        <!-- Active Investments -->
+                        <div class="section-title">Active Investments <a href="investments.html" class="view-link">View All</a></div>
+                        <div class="card" id="investmentsList">
+                            <p style="text-align: center; color: var(--text-gray); font-size: 0.8rem; padding: 20px;">No active investments.</p>
+                        </div>
+
+                        <!-- Recent Deposits -->
+                        <div class="section-title">Recent Deposits <a href="deposits.html" class="view-link">View All</a></div>
+                        <div class="card" id="depositsList">
+                            <p style="text-align: center; color: var(--text-gray); font-size: 0.8rem; padding: 20px;">No deposits found.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Recent Transactions -->
+                        <div class="section-title">Recent Transactions <a href="transactions.html" class="view-link">View All</a></div>
+                        <div class="card" id="transactionsList">
+                            <p style="text-align: center; color: var(--text-gray); font-size: 0.8rem; padding: 20px;">No transaction history.</p>
+                        </div>
+
+                        <!-- Admin Actions -->
+                        <div class="section-title">Account Actions</div>
+                        <div class="card">
+                            <div id="actionContainer">
+                                <p style="font-size: 0.8rem; color: var(--text-gray); margin-bottom: 15px;">Modify account access status. This action is logged.</p>
+                                <!-- Actions populated by JS -->
+                                <button class="btn-action" disabled>Loading Actions...</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../src/lib/supabase.js';
+        import { formatCurrency } from '../src/utils/format.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        
+        let currentUserId = null;
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+
+            const params = new URLSearchParams(window.location.search);
+            currentUserId = params.get('id');
+            if (!currentUserId) { window.location.href = 'users.html'; return; }
+
+            loadUserData();
+        }
+
+        async function loadUserData() {
+            try {
+                // 1. Fetch Profile
+                const { data: user, error } = await supabase.from('profiles').select('*').eq('id', currentUserId).single();
+                if (error || !user) { alert("User not found"); window.location.href = 'users.html'; return; }
+
+                renderHeader(user);
+                renderSummaries(user);
+                renderActions(user);
+
+                // 2. Fetch Lists
+                loadInvestments();
+                loadDeposits();
+                loadTransactions();
+
+            } catch (err) { console.error(err); }
+        }
+
+        function renderHeader(user) {
+            document.getElementById('userInitial').textContent = user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U';
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userRef').textContent = user.id.substring(0, 15) + '...';
+            
+            const status = user.status || 'active';
+            document.getElementById('statusBadge').innerHTML = `<span class="badge badge-${status}">${status}</span>`;
+        }
+
+        function renderSummaries(user) {
+            document.getElementById('sumBalance').textContent = formatCurrency(user.wallet_balance || 0);
+            document.getElementById('sumDeposits').textContent = formatCurrency(user.total_deposited || 0);
+            document.getElementById('sumInvested').textContent = formatCurrency(user.investment_balance || 0);
+            document.getElementById('sumEarnings').textContent = formatCurrency(user.total_earnings || 0);
+        }
+
+        async function loadInvestments() {
+            const { data } = await supabase.from('investments').select('*').eq('user_id', currentUserId).eq('status', 'active').limit(3);
+            const container = document.getElementById('investmentsList');
+            if (data && data.length > 0) {
+                container.innerHTML = data.map(inv => `
+                    <div class="list-item">
+                        <div class="item-row"><span class="item-main">${inv.plan_name}</span><span style="color:var(--gold-primary); font-weight:700;">${formatCurrency(inv.principal_amount)}</span></div>
+                        <div class="item-row"><span class="item-sub">Daily: ${formatCurrency(inv.daily_profit)}</span><span class="item-sub">Started: ${new Date(inv.created_at).toLocaleDateString()}</span></div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function loadDeposits() {
+            const { data } = await supabase.from('deposits').select('*').eq('user_id', currentUserId).order('created_at', { ascending: false }).limit(3);
+            const container = document.getElementById('depositsList');
+            if (data && data.length > 0) {
+                container.innerHTML = data.map(d => `
+                    <div class="list-item">
+                        <div class="item-row"><span class="item-main">${formatCurrency(d.amount)}</span><span class="badge" style="background:rgba(255,255,255,0.05); font-size:0.6rem;">${d.status}</span></div>
+                        <div class="item-row"><span class="item-sub">Ref: ${d.reference}</span><span class="item-sub">${new Date(d.created_at).toLocaleDateString()}</span></div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function loadTransactions() {
+            const { data } = await supabase.from('transactions').select('*').eq('user_id', currentUserId).order('created_at', { ascending: false }).limit(5);
+            const container = document.getElementById('transactionsList');
+            if (data && data.length > 0) {
+                container.innerHTML = data.map(tx => `
+                    <div class="list-item">
+                        <div class="item-row"><span class="item-main" style="text-transform:uppercase;">${tx.type}</span><span style="font-weight:700;">${formatCurrency(tx.amount)}</span></div>
+                        <div class="item-row"><span class="item-sub">${tx.reference}</span><span class="item-sub">${new Date(tx.created_at).toLocaleDateString()}</span></div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderActions(user) {
+            const container = document.getElementById('actionContainer');
+            const isSuspended = user.status === 'suspended';
+            
+            container.innerHTML = `
+                <p style="font-size: 0.8rem; color: var(--text-gray); margin-bottom: 15px;">Modify account access status. This action is logged.</p>
+                <button class="btn-action ${isSuspended ? 'btn-restore' : 'btn-suspend'}" id="statusActionBtn">
+                    ${isSuspended ? 'RESTORE ACCOUNT' : 'SUSPEND ACCOUNT'}
+                </button>
+            `;
+
+            document.getElementById('statusActionBtn').onclick = async () => {
+                const newStatus = isSuspended ? 'active' : 'suspended';
+                if (!confirm(`Are you sure you want to set this account to ${newStatus}?`)) return;
+                
+                const { error } = await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id);
+                if (error) alert("Error updating status");
+                else loadUserData();
+            };
+        }
+
+        // UI Listeners
+        menuToggle.onclick = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+        document.getElementById('refreshBtn').onclick = () => loadUserData();
+        document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
+
+        init();
+    </script>
+</body>
+</html>
