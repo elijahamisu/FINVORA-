@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manage Plans | FINVORA Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --error: #ff4d4d;
+            --success: #00c853;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.2rem; text-decoration: none; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+
+        /* Summary Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-label { font-size: 0.65rem; color: var(--text-gray); text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .stat-val { font-size: 1.1rem; font-weight: 700; color: var(--gold-primary); }
+
+        /* Controls */
+        .controls { display: grid; gap: 12px; margin-bottom: 25px; }
+        .btn-add { background: var(--gold-gradient); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .search-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; }
+
+        /* Plan Cards (Mobile) */
+        .plan-list { display: grid; gap: 15px; }
+        .plan-card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; position: relative; }
+        .plan-name { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold-primary); margin-bottom: 15px; display: block; }
+        
+        .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
+        .grid-item span { display: block; font-size: 0.65rem; color: var(--text-gray); text-transform: uppercase; margin-bottom: 2px; }
+        .grid-item b { font-size: 0.85rem; }
+
+        .status-badge { position: absolute; top: 20px; right: 20px; font-size: 0.6rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        .status-active { background: rgba(0, 200, 83, 0.1); color: var(--success); }
+        .status-inactive { background: rgba(255, 77, 77, 0.1); color: var(--error); }
+
+        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .btn-card { padding: 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; border: 1px solid var(--glass-border); text-align: center; text-decoration: none; }
+        .btn-edit { background: rgba(255,255,255,0.05); color: #fff; }
+        .btn-status { background: transparent; color: var(--gold-primary); border-color: var(--gold-primary); }
+
+        /* Desktop Table */
+        .desktop-table-wrap { display: none; background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; font-size: 0.75rem; color: var(--gold-primary); background: rgba(255,255,255,0.02); text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+        .modal-content { background: var(--bg-navy); border: 1px solid var(--gold-primary); width: 100%; max-width: 500px; border-radius: 16px; padding: 25px; margin: auto; }
+        .modal-title { font-family: 'Playfair Display', serif; color: var(--gold-primary); margin-bottom: 20px; }
+
+        /* Sidebar/Drawer Navigation */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 30px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 2px; font-size: 0.9rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; border-left: 3px solid var(--gold-primary); }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .controls { grid-template-columns: 200px 1fr; align-items: center; }
+            .plan-list { display: none; }
+            .desktop-table-wrap { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="index.html" class="logo">FINVORA ADMIN</a>
+        <div style="font-size: 1.2rem;">📈</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 30px; display: block; text-align: center; font-size: 1.6rem;">FINVORA</div>
+            <nav>
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="users.html" class="nav-link">Users</a>
+                <a href="plans.html" class="nav-link active">Investment Plans</a>
+                <a href="investments.html" class="nav-link">Investments</a>
+                <a href="deposits.html" class="nav-link">Deposits</a>
+                <a href="withdrawals.html" class="nav-link">Withdrawals</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="settings.html" class="nav-link">Settings</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 30px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <h1 style="font-family: 'Playfair Display'; font-size: 1.5rem; margin-bottom: 20px;">Plan Management</h1>
+
+                <!-- Summary Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card"><span class="stat-label">Total Plans</span><div class="stat-val" id="totalPlans">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Active</span><div class="stat-val" id="activePlans" style="color:var(--success);">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Inactive</span><div class="stat-val" id="inactivePlans" style="color:var(--error);">0</div></div>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="btn-add" id="addPlanBtn"><span>+</span> ADD NEW PLAN</button>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search plan names...">
+                </div>
+
+                <!-- Data Display -->
+                <div id="planContainer">
+                    <div class="plan-list" id="mobileList"></div>
+                    
+                    <div class="desktop-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Plan Name</th>
+                                    <th>Min. Investment</th>
+                                    <th>Daily Profit</th>
+                                    <th>Total Return</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="desktopBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+                    <p style="color: var(--text-gray);">No investment plans found.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal (Add/Edit) -->
+    <div class="modal" id="planModal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modalTitle">Add New Plan</h2>
+            <form id="planForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="font-size: 0.7rem; color: var(--text-gray);">PLAN NAME</label>
+                        <input type="text" id="pName" class="search-input" placeholder="e.g. VIP 1" required>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7rem; color: var(--text-gray);">MIN. INVESTMENT</label>
+                        <input type="number" id="pMin" class="search-input" placeholder="2800" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="font-size: 0.7rem; color: var(--text-gray);">DAILY PROFIT</label>
+                        <input type="number" id="pDaily" class="search-input" placeholder="650" required>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7rem; color: var(--text-gray);">DURATION (DAYS)</label>
+                        <input type="number" id="pDuration" class="search-input" placeholder="20" required>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 0.7rem; color: var(--text-gray);">PURCHASE LIMIT</label>
+                    <input type="number" id="pLimit" class="search-input" value="1" required>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-add" style="flex: 1;">SAVE PLAN</button>
+                    <button type="button" class="btn-add" style="background:transparent; border:1px solid var(--error); color:var(--error); flex: 1;" id="closeModal">CANCEL</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../src/lib/supabase.js';
+        import { formatCurrency } from '../src/utils/format.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileList = document.getElementById('mobileList');
+        const desktopBody = document.getElementById('desktopBody');
+        const planModal = document.getElementById('planModal');
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+            if (!profile || profile.role !== 'admin') { window.location.href = 'login.html'; return; }
+
+            loadPlans();
+        }
+
+        async function loadPlans() {
+            const { data: plans, error } = await supabase.from('investment_plans').select('*').order('min_amount', { ascending: true });
+            
+            if (plans) {
+                renderData(plans);
+                document.getElementById('totalPlans').textContent = plans.length;
+                document.getElementById('activePlans').textContent = plans.filter(p => p.active).length;
+                document.getElementById('inactivePlans').textContent = plans.filter(p => !p.active).length;
+                document.getElementById('emptyState').style.display = plans.length === 0 ? 'block' : 'none';
+            }
+        }
+
+        function renderData(plans) {
+            mobileList.innerHTML = '';
+            desktopBody.innerHTML = '';
+
+            plans.forEach(plan => {
+                const statusClass = plan.active ? 'status-active' : 'status-inactive';
+                const statusText = plan.active ? 'Active' : 'Inactive';
+                const totalReturn = plan.daily_profit * plan.duration;
+
+                // Mobile
+                const card = document.createElement('div');
+                card.className = 'plan-card';
+                card.innerHTML = `
+                    <span class="plan-name">${plan.name}</span>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                    <div class="plan-grid">
+                        <div class="grid-item"><span>Min. Invest</span><b>${formatCurrency(plan.min_amount)}</b></div>
+                        <div class="grid-item"><span>Daily Profit</span><b>${formatCurrency(plan.daily_profit)}</b></div>
+                        <div class="grid-item"><span>Duration</span><b>${plan.duration} Days</b></div>
+                        <div class="grid-item"><span>Total Return</span><b>${formatCurrency(totalReturn)}</b></div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-card btn-edit">EDIT</button>
+                        <button class="btn-card btn-status" onclick="window.togglePlan('${plan.id}', ${plan.active})">
+                            ${plan.active ? 'DEACTIVATE' : 'ACTIVATE'}
+                        </button>
+                    </div>
+                `;
+                mobileList.appendChild(card);
+
+                // Desktop
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><b>${plan.name}</b></td>
+                    <td>${formatCurrency(plan.min_amount)}</td>
+                    <td>${formatCurrency(plan.daily_profit)}</td>
+                    <td><b>${formatCurrency(totalReturn)}</b></td>
+                    <td>${plan.duration} Days</td>
+                    <td><span class="status-badge ${statusClass}" style="position:static;">${statusText}</span></td>
+                    <td>
+                        <button class="btn-status" style="padding:4px 8px; font-size:0.7rem; border-radius:4px;" onclick="window.togglePlan('${plan.id}', ${plan.active})">
+                            ${plan.active ? 'Disable' : 'Enable'}
+                        </button>
+                    </td>
+                `;
+                desktopBody.appendChild(row);
+            });
+        }
+
+        window.togglePlan = async (id, currentStatus) => {
+            if (!confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this plan?`)) return;
+            const { error } = await supabase.from('investment_plans').update({ active: !currentStatus }).eq('id', id);
+            if (!error) loadPlans();
+        };
+
+        // UI Handlers
+        menuToggle.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+        document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
+        document.getElementById('addPlanBtn').onclick = () => { planModal.style.display = 'flex'; };
+        document.getElementById('closeModal').onclick = () => { planModal.style.display = 'none'; };
+
+        init();
+    </script>
+</body>
+</html>
