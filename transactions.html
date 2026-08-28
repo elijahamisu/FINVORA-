@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Transactions | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        /* Container */
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+        /* Summary Cards - Mobile Scroll */
+        .summary-wrapper { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; margin-bottom: 25px; scrollbar-width: none; }
+        .summary-wrapper::-webkit-scrollbar { display: none; }
+        .summary-card { flex: 0 0 160px; background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; }
+        .summary-card span { font-size: 0.7rem; color: var(--text-gray); text-transform: uppercase; }
+        .summary-card h3 { font-size: 1rem; color: var(--gold-primary); margin-top: 5px; }
+
+        /* Controls */
+        .controls { display: grid; gap: 15px; margin-bottom: 20px; }
+        .search-box { position: relative; }
+        .input-field { 
+            width: 100%; background: var(--bg-navy); border: 1px solid var(--glass-border); 
+            padding: 12px 15px; border-radius: 8px; color: #fff; outline: none; font-size: 0.9rem;
+        }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* Transaction List - Mobile Card First */
+        .tx-list { display: grid; gap: 12px; }
+        .tx-card { 
+            background: var(--bg-navy); border: 1px solid var(--glass-border); 
+            padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .tx-card:active { transform: scale(0.98); background: rgba(212, 175, 55, 0.05); }
+        .tx-info h4 { font-size: 0.9rem; text-transform: capitalize; }
+        .tx-info p { font-size: 0.75rem; color: var(--text-gray); }
+        .tx-amt { font-weight: 700; font-size: 0.95rem; text-align: right; }
+        .tx-amt.positive { color: var(--gold-primary); }
+        .tx-status { font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-top: 4px; display: inline-block; }
+        
+        /* Status Themes */
+        .status-completed { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+        .status-pending { background: rgba(255,255,255,0.05); color: #fff; }
+        .status-failed, .status-rejected { background: rgba(255, 77, 77, 0.1); color: #ff4d4d; }
+
+        /* Desktop Table (Hidden on Mobile) */
+        .desktop-table-wrap { display: none; background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; font-size: 0.75rem; color: var(--gold-primary); background: rgba(255,255,255,0.02); }
+        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+
+        /* Load More */
+        .load-more { width: 100%; padding: 15px; margin-top: 20px; background: transparent; border: 1px dashed var(--gold-primary); color: var(--gold-primary); border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        /* Details Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-navy); border: 1px solid var(--gold-primary); width: 100%; max-width: 400px; border-radius: 16px; padding: 25px; }
+        .modal-row { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
+        .modal-row span:first-child { color: var(--text-gray); font-size: 0.85rem; }
+        .modal-row span:last-child { font-weight: 600; font-size: 0.9rem; text-align: right; }
+
+        /* Navigation Drawer (Mobile) */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; }
+
+        /* Responsive Enhancement */
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+            .tx-list { display: none; }
+            .desktop-table-wrap { display: block; }
+            .summary-card { flex: 1; }
+            .controls { grid-template-columns: 1fr 400px; align-items: center; }
+            .filter-grid { grid-template-columns: 150px 150px; justify-content: flex-end; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="transactions.html" class="nav-link active">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: #ff4d4d; margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <h1 style="margin-bottom: 20px; font-family: 'Playfair Display';">Transaction History</h1>
+
+                <!-- Summary -->
+                <div class="summary-wrapper">
+                    <div class="summary-card"><span>Deposits</span><h3 id="sumDeposits">₦0.00</h3></div>
+                    <div class="summary-card"><span>Withdrawals</span><h3 id="sumWithdrawals">₦0.00</h3></div>
+                    <div class="summary-card"><span>Investments</span><h3 id="sumInvestments">₦0.00</h3></div>
+                    <div class="summary-card"><span>Earnings</span><h3 id="sumEarnings">₦0.00</h3></div>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" class="input-field" placeholder="Search by reference or type...">
+                    </div>
+                    <div class="filter-grid">
+                        <select id="typeFilter" class="input-field" style="background-image: none;">
+                            <option value="all">All Types</option>
+                            <option value="deposit">Deposits</option>
+                            <option value="withdrawal">Withdrawals</option>
+                            <option value="investment">Investments</option>
+                            <option value="earning">Earnings</option>
+                            <option value="referral">Referrals</option>
+                        </select>
+                        <select id="statusFilter" class="input-field">
+                            <option value="all">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Data Display -->
+                <div id="txContainer">
+                    <!-- Mobile List -->
+                    <div class="tx-list" id="mobileList"></div>
+                    
+                    <!-- Desktop Table -->
+                    <div class="desktop-table-wrap">
+                        <table>
+                            <thead>
+                                <tr><th>Type</th><th>Amount</th><th>Status</th><th>Reference</th><th>Date</th></tr>
+                            </thead>
+                            <tbody id="desktopBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+                    <p style="color: var(--text-gray); margin-bottom: 20px;">No transactions found yet.</p>
+                    <a href="deposit.html" class="nav-link" style="background: var(--gold-gradient); color: #000; display: inline-block;">Make a Deposit</a>
+                </div>
+
+                <button id="loadMoreBtn" class="load-more" style="display: none;">Load More Transactions</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal" id="txModal">
+        <div class="modal-content">
+            <h3 style="color: var(--gold-primary); margin-bottom: 20px; border-bottom: 1px solid var(--gold-primary); padding-bottom: 10px;">Transaction Details</h3>
+            <div id="modalDetails"></div>
+            <button class="btn-gold" style="width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: none; background: var(--gold-gradient); color: #000; font-weight: 700; cursor: pointer;" onclick="document.getElementById('txModal').style.display='none'">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+        import { formatCurrency, formatDate } from './src/utils/format.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        let currentPage = 0;
+        const perPage = 15;
+        let allTransactions = [];
+
+        // Navigation
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        menuToggle?.addEventListener('click', toggleMenu);
+        overlay?.addEventListener('click', toggleMenu);
+        logoutBtn?.addEventListener('click', async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; });
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+            const user = session.user;
+
+            // Load Summaries
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (profile) {
+                document.getElementById('sumDeposits').textContent = formatCurrency(profile.total_deposited || 0);
+                document.getElementById('sumWithdrawals').textContent = formatCurrency(profile.total_withdrawn || 0);
+                document.getElementById('sumInvestments').textContent = formatCurrency(profile.investment_balance || 0);
+                document.getElementById('sumEarnings').textContent = formatCurrency(profile.total_earnings || 0);
+            }
+
+            loadTransactions();
+        }
+
+        async function loadTransactions(append = false) {
+            const user = await auth.getUser();
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            let query = supabase.from('transactions').select('*', { count: 'exact' }).eq('user_id', user.id).order('created_at', { ascending: false });
+
+            if (type !== 'all') query = query.eq('type', type);
+            if (status !== 'all') query = query.eq('status', status);
+
+            const { data, count, error } = await query.range(currentPage * perPage, (currentPage + 1) * perPage - 1);
+
+            if (data) {
+                if (append) allTransactions = [...allTransactions, ...data];
+                else allTransactions = data;
+
+                renderData(allTransactions);
+                
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                if (count > allTransactions.length) loadMoreBtn.style.display = 'block';
+                else loadMoreBtn.style.display = 'none';
+
+                document.getElementById('emptyState').style.display = allTransactions.length === 0 ? 'block' : 'none';
+            }
+        }
+
+        function renderData(txs) {
+            const mobileList = document.getElementById('mobileList');
+            const desktopBody = document.getElementById('desktopBody');
+            
+            mobileList.innerHTML = '';
+            desktopBody.innerHTML = '';
+
+            txs.forEach(tx => {
+                const isPositive = ['deposit', 'earning', 'referral'].includes(tx.type);
+                const amtStr = `${isPositive ? '+' : '-'}${formatCurrency(Math.abs(tx.amount))}`;
+                
+                // Mobile
+                const card = document.createElement('div');
+                card.className = 'tx-card';
+                card.onclick = () => showDetails(tx);
+                card.innerHTML = `
+                    <div class="tx-info">
+                        <h4>${tx.type}</h4>
+                        <p>${formatDate(tx.created_at)}</p>
+                        <span class="tx-status status-${tx.status.toLowerCase()}">${tx.status}</span>
+                    </div>
+                    <div class="tx-amt ${isPositive ? 'positive' : ''}">${amtStr}</div>
+                `;
+                mobileList.appendChild(card);
+
+                // Desktop
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = () => showDetails(tx);
+                row.innerHTML = `
+                    <td style="text-transform: capitalize;">${tx.type}</td>
+                    <td class="${isPositive ? 'positive' : ''}">${amtStr}</td>
+                    <td><span class="tx-status status-${tx.status.toLowerCase()}">${tx.status}</span></td>
+                    <td style="font-size: 0.75rem; color: var(--text-gray);">${tx.reference}</td>
+                    <td>${formatDate(tx.created_at)}</td>
+                `;
+                desktopBody.appendChild(row);
+            });
+        }
+
+        function showDetails(tx) {
+            const modal = document.getElementById('txModal');
+            const details = document.getElementById('modalDetails');
+            const isPositive = ['deposit', 'earning', 'referral'].includes(tx.type);
+
+            details.innerHTML = `
+                <div class="modal-row"><span>Type</span><span style="text-transform: capitalize;">${tx.type}</span></div>
+                <div class="modal-row"><span>Amount</span><span class="${isPositive ? 'positive' : ''}">${formatCurrency(tx.amount)}</span></div>
+                <div class="modal-row"><span>Status</span><span class="tx-status status-${tx.status.toLowerCase()}">${tx.status}</span></div>
+                <div class="modal-row"><span>Reference</span><span style="word-break: break-all;">${tx.reference}</span></div>
+                <div class="modal-row"><span>Date</span><span>${formatDate(tx.created_at)}</span></div>
+                <div class="modal-row" style="border:none;"><span>Description</span><span>${tx.description || 'N/A'}</span></div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        // Event Listeners
+        document.getElementById('loadMoreBtn').onclick = () => { currentPage++; loadTransactions(true); };
+        document.getElementById('typeFilter').onchange = () => { currentPage = 0; loadTransactions(); };
+        document.getElementById('statusFilter').onchange = () => { currentPage = 0; loadTransactions(); };
+        document.getElementById('searchInput').oninput = () => { currentPage = 0; loadTransactions(); };
+
+        init();
+    </script>
+</body>
+</html>
