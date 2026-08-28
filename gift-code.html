@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gift Code — FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --error: #ff4d4d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+
+        /* Hero Card */
+        .hero-card { 
+            background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); 
+            text-align: center; padding: 40px 20px; 
+            border-bottom: 2px solid var(--gold-primary);
+        }
+        .hero-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .hero-card h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold-primary); margin-bottom: 10px; }
+        .hero-card p { font-size: 0.85rem; color: var(--text-gray); line-height: 1.5; }
+
+        /* Redeem Form */
+        .input-group { margin-top: 25px; }
+        .input-field {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            padding: 18px; border-radius: 12px; color: #fff; font-size: 1.1rem; 
+            font-weight: 700; text-align: center; letter-spacing: 2px; outline: none; transition: 0.3s;
+        }
+        .input-field:focus { border-color: var(--gold-primary); background: rgba(255,255,255,0.08); }
+        .btn-redeem {
+            width: 100%; padding: 18px; border-radius: 12px; border: none; font-weight: 700; font-size: 1rem;
+            background: var(--gold-gradient); color: #000; cursor: pointer; margin-top: 15px; transition: 0.3s;
+        }
+        .btn-redeem:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Success/Result Cards */
+        .result-card { display: none; text-align: center; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* History List */
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold-primary); margin: 25px 0 15px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-item:last-child { border: none; }
+        .hist-info h4 { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .hist-info p { font-size: 0.75rem; color: var(--text-gray); margin-top: 2px; }
+        .hist-val { font-weight: 700; color: var(--gold-primary); text-align: right; }
+
+        /* Navigation Drawer */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-weight: 500; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 700; }
+
+        /* Desktop Adjustments */
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; margin-left: 0; }
+            .gift-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; align-items: start; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link active">Gift Code</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                
+                <div class="gift-grid">
+                    <div>
+                        <!-- Hero & Redeem -->
+                        <div class="card hero-card">
+                            <span class="hero-icon">🎁</span>
+                            <h1>FINVORA GIFT CODE</h1>
+                            <p>Enter your valid Gift Code below to redeem your exclusive reward instantly.</p>
+                            
+                            <div class="input-group">
+                                <input type="text" id="giftInput" class="input-field" placeholder="ENTER CODE HERE" spellcheck="false" autocomplete="off">
+                                <button class="btn-redeem" id="redeemBtn">REDEEM CODE</button>
+                            </div>
+                        </div>
+
+                        <!-- Success UI -->
+                        <div class="card result-card" id="successCard" style="border-color: var(--gold-primary);">
+                            <h2 style="color: var(--gold-primary); margin-bottom: 10px;">SUCCESS!</h2>
+                            <p id="successMsg" style="font-size: 0.9rem; margin-bottom: 20px;">Your reward has been added to your wallet.</p>
+                            <div style="display: flex; gap: 10px;">
+                                <a href="wallet.html" class="btn-redeem" style="text-decoration: none; display: block; font-size: 0.8rem; padding: 12px;">VIEW WALLET</a>
+                                <a href="transactions.html" class="btn-redeem" style="text-decoration: none; display: block; font-size: 0.8rem; padding: 12px; background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary);">HISTORY</a>
+                            </div>
+                        </div>
+
+                        <!-- Error UI -->
+                        <div class="card result-card" id="errorCard" style="border-color: var(--error);">
+                            <h2 style="color: var(--error); margin-bottom: 10px;">REDEEM FAILED</h2>
+                            <p id="errorMsg" style="font-size: 0.9rem; color: var(--text-gray);">Invalid or expired gift code.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- History -->
+                        <h2 class="section-title">Redemption History</h2>
+                        <div class="card">
+                            <div id="historyList">
+                                <p style="text-align: center; color: var(--text-gray); font-size: 0.8rem; padding: 20px;">Loading history...</p>
+                            </div>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="card" style="background: rgba(255,255,255,0.02); font-size: 0.85rem; line-height: 1.6;">
+                            <h4 style="color: var(--gold-primary); margin-bottom: 10px;">How it Works</h4>
+                            <p>1. Enter your code and click redeem.</p>
+                            <p>2. Our system verifies the code's validity and usage limits.</p>
+                            <p>3. If eligible, your reward is applied to your account balance immediately.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+        import { formatCurrency } from './src/utils/format.js';
+
+        const giftInput = document.getElementById('giftInput');
+        const redeemBtn = document.getElementById('redeemBtn');
+        const historyList = document.getElementById('historyList');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        
+        const successCard = document.getElementById('successCard');
+        const errorCard = document.getElementById('errorCard');
+
+        // Navigation
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        document.getElementById('menuToggle').onclick = toggleMenu;
+        overlay.onclick = toggleMenu;
+        document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+            loadHistory(session.user.id);
+        }
+
+        async function loadHistory(userId) {
+            try {
+                // Fetch user's own redemptions
+                const { data, error } = await supabase
+                    .from('gift_code_redemptions')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    historyList.innerHTML = '<p style="text-align: center; color: var(--text-gray); font-size: 0.8rem; padding: 20px;">No redemptions yet.</p>';
+                    return;
+                }
+
+                historyList.innerHTML = data.map(item => `
+                    <div class="history-item">
+                        <div class="hist-info">
+                            <h4>${item.code_label || 'GIFT REWARD'}</h4>
+                            <p>${new Date(item.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div class="hist-val">${item.reward_value > 0 ? '+' + formatCurrency(item.reward_value) : 'REDEEMED'}</div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                historyList.innerHTML = '<p style="color: var(--error); text-align: center; font-size: 0.8rem;">Failed to load history.</p>';
+            }
+        }
+
+        redeemBtn.onclick = async () => {
+            const code = giftInput.value.trim().toUpperCase();
+            if (!code) return;
+
+            redeemBtn.disabled = true;
+            redeemBtn.textContent = 'REDEEMING...';
+            successCard.style.display = 'none';
+            errorCard.style.display = 'none';
+
+            try {
+                const session = await auth.getSession();
+                
+                // Authoritative Backend Call (api/gift.js)
+                const res = await fetch('/api/gift', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ code })
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    document.getElementById('successMsg').textContent = `Success! You received ${formatCurrency(result.value)}.`;
+                    successCard.style.display = 'block';
+                    giftInput.value = '';
+                    loadHistory(session.user.id);
+                } else {
+                    document.getElementById('errorMsg').textContent = result.error || 'Invalid or expired gift code.';
+                    errorCard.style.display = 'block';
+                }
+
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = 'Connection error. Please try again.';
+                errorCard.style.display = 'block';
+            } finally {
+                redeemBtn.disabled = false;
+                redeemBtn.textContent = 'REDEEM CODE';
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>
