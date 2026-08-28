@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Platform Transactions | FINVORA Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --success: #00c853;
+            --warning: #ffab00;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.1rem; text-decoration: none; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+
+        /* Summary Cards - Scrollable on mobile */
+        .summary-row { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: none; }
+        .summary-row::-webkit-scrollbar { display: none; }
+        .stat-card { flex: 0 0 160px; background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-label { font-size: 0.6rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: block; }
+        .stat-val { font-size: 0.95rem; font-weight: 700; color: var(--gold-primary); }
+
+        /* Filters */
+        .controls { display: grid; gap: 12px; margin-bottom: 25px; }
+        .search-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .filter-select { background: var(--bg-navy); border: 1px solid var(--glass-border); color: var(--text-gray); padding: 10px; border-radius: 8px; font-size: 0.85rem; outline: none; width: 100%; }
+
+        /* Transaction List (Mobile) */
+        .tx-list { display: grid; gap: 10px; }
+        .tx-card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; cursor: pointer; }
+        .tx-card:active { background: rgba(212, 175, 55, 0.05); transform: scale(0.98); }
+        .tx-main h4 { font-size: 0.85rem; text-transform: capitalize; }
+        .tx-main p { font-size: 0.7rem; color: var(--text-gray); margin-top: 2px; }
+        .tx-right { text-align: right; }
+        .tx-amt { font-weight: 700; font-size: 0.95rem; }
+        .amt-in { color: var(--success); }
+        .amt-out { color: #fff; }
+        .status-pill { font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-top: 4px; display: inline-block; }
+        .st-completed { background: rgba(0, 200, 83, 0.1); color: var(--success); }
+        .st-pending { background: rgba(255, 171, 0, 0.1); color: var(--warning); }
+
+        /* Desktop Table */
+        .desktop-table-wrap { display: none; background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; font-size: 0.7rem; color: var(--gold-primary); background: rgba(255,255,255,0.02); text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 30px; padding-bottom: 40px; }
+        .btn-page { background: none; border: 1px solid var(--glass-border); color: var(--gold-primary); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; }
+        .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-navy); border: 1px solid var(--gold-primary); width: 100%; max-width: 500px; border-radius: 16px; padding: 25px; }
+        .modal-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+        .modal-row span:first-child { color: var(--text-gray); font-size: 0.8rem; }
+        .modal-row span:last-child { font-weight: 600; font-size: 0.85rem; text-align: right; word-break: break-all; }
+
+        /* Sidebar Navigation */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 30px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 2px; font-size: 0.9rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; border-left: 3px solid var(--gold-primary); }
+
+        @media (min-width: 1024px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+            .summary-row { display: grid; grid-template-columns: repeat(5, 1fr); overflow: visible; }
+            .stat-card { flex: none; }
+            .controls { grid-template-columns: 1fr 500px; align-items: center; }
+            .filter-grid { grid-template-columns: 1fr 1fr; }
+            .tx-list { display: none; }
+            .desktop-table-wrap { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="index.html" class="logo">FINVORA ADMIN</a>
+        <div style="font-size: 1.2rem;">📑</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 30px; display: block; text-align: center; font-size: 1.6rem;">FINVORA</div>
+            <nav>
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="users.html" class="nav-link">Users</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="investments.html" class="nav-link">Investments</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="deposits.html" class="nav-link">Deposits</a>
+                <a href="withdrawals.html" class="nav-link">Withdrawals</a>
+                <a href="transactions.html" class="nav-link active">Transactions</a>
+                <a href="settings.html" class="nav-link">Settings</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 30px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-family: 'Playfair Display'; font-size: 1.4rem;">Transaction Audit</h1>
+                        <p style="font-size: 0.75rem; color: var(--text-gray);">Full financial activity history</p>
+                    </div>
+                    <button id="refreshBtn" style="background: none; border: 1px solid var(--glass-border); color: var(--gold-primary); font-size: 0.7rem; padding: 5px 12px; border-radius: 4px; font-weight: 700; cursor: pointer;">REFRESH</button>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="summary-row">
+                    <div class="stat-card"><span class="stat-label">Total Txns</span><div class="stat-val" id="statTotal">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Money In</span><div class="stat-val" id="statIn" style="color:var(--success);">₦0.00</div></div>
+                    <div class="stat-card"><span class="stat-label">Money Out</span><div class="stat-val" id="statOut">₦0.00</div></div>
+                    <div class="stat-card"><span class="stat-label">Pending</span><div class="stat-val" id="statPending" style="color:var(--warning);">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Completed</span><div class="stat-val" id="statCompleted">0</div></div>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Reference, User ID or Description...">
+                    <div class="filter-grid">
+                        <select id="typeFilter" class="filter-select">
+                            <option value="all">All Types</option>
+                            <option value="deposit">Deposit</option>
+                            <option value="withdrawal">Withdrawal</option>
+                            <option value="investment">Investment</option>
+                            <option value="earning">Earning</option>
+                            <option value="referral">Referral</option>
+                        </select>
+                        <select id="statusFilter" class="filter-select">
+                            <option value="all">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Data Content -->
+                <div id="txnContainer">
+                    <div class="tx-list" id="mobileList"></div>
+                    <div class="desktop-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ref</th>
+                                    <th>User</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="desktopBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+                    <p style="color: var(--text-gray);">No transactions found matching your criteria.</p>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="btn-page" id="prevPage">‹ Previous</button>
+                    <span id="pageInfo" style="font-size: 0.75rem; color: var(--text-gray);">Page 1</span>
+                    <button class="btn-page" id="nextPage">Next ›</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content">
+            <h2 style="font-family: 'Playfair Display'; color: var(--gold-primary); margin-bottom: 20px; font-size: 1.2rem;">Transaction Details</h2>
+            <div id="modalBody"></div>
+            <button class="btn-page" style="width: 100%; border-color: var(--gold-primary); margin-top: 20px;" onclick="document.getElementById('detailsModal').style.display='none'">CLOSE</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../src/lib/supabase.js';
+        import { formatCurrency, formatDate } from '../src/utils/format.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileList = document.getElementById('mobileList');
+        const desktopBody = document.getElementById('desktopBody');
+
+        let currentPage = 0;
+        const perPage = 15;
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+            if (!profile || profile.role !== 'admin') { window.location.href = 'login.html'; return; }
+
+            loadStats();
+            loadTransactions();
+        }
+
+        async function loadStats() {
+            const { count: total } = await supabase.from('transactions').select('*', { count: 'exact', head: true });
+            const { count: pending } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+            const { count: completed } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'completed');
+            
+            document.getElementById('statTotal').textContent = total || 0;
+            document.getElementById('statPending').textContent = pending || 0;
+            document.getElementById('statCompleted').textContent = completed || 0;
+        }
+
+        async function loadTransactions() {
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            let query = supabase.from('transactions').select('*', { count: 'exact' });
+
+            if (type !== 'all') query = query.eq('type', type);
+            if (status !== 'all') query = query.eq('status', status);
+            if (search) query = query.or(`reference.ilike.%${search}%,user_id.ilike.%${search}%,description.ilike.%${search}%`);
+
+            query = query.order('created_at', { ascending: false });
+
+            const { data, count, error } = await query.range(currentPage * perPage, (currentPage + 1) * perPage - 1);
+
+            if (data) {
+                renderData(data);
+                updatePagination(count);
+            }
+        }
+
+        function renderData(items) {
+            mobileList.innerHTML = '';
+            desktopBody.innerHTML = '';
+            document.getElementById('emptyState').style.display = items.length === 0 ? 'block' : 'none';
+
+            items.forEach(tx => {
+                const amount = formatCurrency(tx.amount);
+                const date = new Date(tx.created_at).toLocaleDateString();
+                const isIn = ['deposit', 'earning', 'referral'].includes(tx.type);
+                const statusClass = tx.status === 'completed' ? 'st-completed' : 'st-pending';
+
+                // Mobile
+                const card = document.createElement('div');
+                card.className = 'tx-card';
+                card.onclick = () => window.showDetails(tx.id);
+                card.innerHTML = `
+                    <div class="tx-main">
+                        <h4>${tx.type}</h4>
+                        <p>${date} • Ref: ${tx.reference.substring(0,10)}...</p>
+                        <span class="status-pill ${statusClass}">${tx.status}</span>
+                    </div>
+                    <div class="tx-right">
+                        <div class="tx-amt ${isIn ? 'amt-in' : 'amt-out'}">${isIn ? '+' : '-'}${amount}</div>
+                    </div>
+                `;
+                mobileList.appendChild(card);
+
+                // Desktop
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-family:monospace; font-size:0.7rem;">${tx.reference}</td>
+                    <td style="font-size:0.7rem;">${tx.user_id.substring(0,12)}...</td>
+                    <td style="text-transform:capitalize;">${tx.type}</td>
+                    <td class="${isIn ? 'amt-in' : ''}" style="font-weight:700;">${isIn ? '+' : '-'}${amount}</td>
+                    <td><span class="status-pill ${statusClass}" style="position:static;">${tx.status}</span></td>
+                    <td>${date}</td>
+                    <td><button class="btn-page" onclick="window.showDetails('${tx.id}')">View</button></td>
+                `;
+                desktopBody.appendChild(row);
+            });
+        }
+
+        window.showDetails = async (id) => {
+            const { data } = await supabase.from('transactions').select('*').eq('id', id).single();
+            if (data) {
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = `
+                    <div class="modal-row"><span>Ref:</span><span>${data.reference}</span></div>
+                    <div class="modal-row"><span>User ID:</span><span>${data.user_id}</span></div>
+                    <div class="modal-row"><span>Type:</span><span style="text-transform:capitalize;">${data.type}</span></div>
+                    <div class="modal-row"><span>Amount:</span><span style="color:var(--gold-primary); font-size:1.1rem;">${formatCurrency(data.amount)}</span></div>
+                    <div class="modal-row"><span>Status:</span><span>${data.status.toUpperCase()}</span></div>
+                    <div class="modal-row"><span>Date:</span><span>${formatDate(data.created_at)}</span></div>
+                    <div class="modal-row" style="border:none;"><span>Description:</span><span>${data.description || 'N/A'}</span></div>
+                    <div style="margin-top:20px; display:grid; gap:10px;">
+                        <a href="user-details.html?id=${data.user_id}" class="btn-page" style="text-align:center; text-decoration:none; display:block;">View User Details</a>
+                    </div>
+                `;
+                document.getElementById('detailsModal').style.display = 'flex';
+            }
+        };
+
+        function updatePagination(total) {
+            const totalPages = Math.ceil(total / perPage);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages || 1}`;
+            document.getElementById('prevPage').disabled = currentPage === 0;
+            document.getElementById('nextPage').disabled = (currentPage + 1) >= totalPages;
+        }
+
+        // Listeners
+        menuToggle.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+        document.getElementById('refreshBtn').onclick = () => { loadStats(); loadTransactions(); };
+        document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
+        document.getElementById('searchInput').oninput = () => { currentPage = 0; loadTransactions(); };
+        document.getElementById('typeFilter').onchange = () => { currentPage = 0; loadTransactions(); };
+        document.getElementById('statusFilter').onchange = () => { currentPage = 0; loadTransactions(); };
+        document.getElementById('prevPage').onclick = () => { if (currentPage > 0) { currentPage--; loadTransactions(); } };
+        document.getElementById('nextPage').onclick = () => { currentPage++; loadTransactions(); };
+
+        init();
+    </script>
+</body>
+</html>
