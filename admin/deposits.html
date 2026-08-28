@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manage Deposits | FINVORA Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --success: #00c853;
+            --warning: #ffab00;
+            --error: #ff4d4d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.1rem; text-decoration: none; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+
+        /* Summary Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-label { font-size: 0.6rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: block; }
+        .stat-val { font-size: 0.9rem; font-weight: 700; color: var(--gold-primary); }
+
+        /* Filters */
+        .controls { display: grid; gap: 12px; margin-bottom: 25px; }
+        .search-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; }
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .filter-select { background: var(--bg-navy); border: 1px solid var(--glass-border); color: var(--text-gray); padding: 10px; border-radius: 8px; font-size: 0.85rem; outline: none; width: 100%; }
+
+        /* Deposit Cards (Mobile) */
+        .list-container { display: grid; gap: 12px; }
+        .deposit-card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 18px; position: relative; }
+        .ref-text { font-family: monospace; font-size: 0.65rem; color: var(--text-gray); display: block; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; }
+        .amt-text { color: var(--gold-primary); font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; display: block; }
+        
+        .card-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; color: var(--text-gray); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
+        .meta-label { text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.5px; display: block; margin-bottom: 2px; }
+        .meta-val { color: var(--text-white); font-weight: 600; }
+
+        .status-badge { position: absolute; top: 18px; right: 18px; font-size: 0.6rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        .status-confirmed { background: rgba(0, 200, 83, 0.1); color: var(--success); }
+        .status-pending { background: rgba(255, 171, 0, 0.1); color: var(--warning); }
+        .status-rejected { background: rgba(255, 77, 77, 0.1); color: var(--error); }
+
+        .btn-view { width: 100%; margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+
+        /* Desktop Table */
+        .desktop-table-wrap { display: none; background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; font-size: 0.7rem; color: var(--gold-primary); background: rgba(255,255,255,0.02); text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 30px; padding-bottom: 40px; }
+        .btn-page { background: none; border: 1px solid var(--glass-border); color: var(--gold-primary); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; }
+        .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Navigation Drawer */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 30px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 2px; font-size: 0.9rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; border-left: 3px solid var(--gold-primary); }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-navy); border: 1px solid var(--gold-primary); width: 100%; max-width: 500px; border-radius: 16px; padding: 25px; }
+
+        @media (min-width: 1024px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; margin-left: 0; }
+            .stats-grid { grid-template-columns: repeat(5, 1fr); }
+            .controls { grid-template-columns: 1fr 450px; align-items: center; }
+            .list-container { display: none; }
+            .desktop-table-wrap { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="index.html" class="logo">FINVORA ADMIN</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 30px; display: block; text-align: center; font-size: 1.6rem;">FINVORA</div>
+            <nav>
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="users.html" class="nav-link">Users</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="investments.html" class="nav-link">Investments</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="deposits.html" class="nav-link active">Deposits</a>
+                <a href="withdrawals.html" class="nav-link">Withdrawals</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="settings.html" class="nav-link">Settings</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 30px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-family: 'Playfair Display'; font-size: 1.4rem;">Incoming Deposits</h1>
+                        <p style="font-size: 0.75rem; color: var(--text-gray);">Monitoring payment confirmations</p>
+                    </div>
+                    <button id="refreshBtn" style="background: none; border: 1px solid var(--glass-border); color: var(--gold-primary); font-size: 0.7rem; padding: 5px 12px; border-radius: 4px; font-weight: 700; cursor: pointer;">REFRESH</button>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="stats-grid">
+                    <div class="stat-card"><span class="stat-label">Total Deposits</span><div class="stat-val" id="statTotalAmt">₦0.00</div></div>
+                    <div class="stat-card"><span class="stat-label">Today</span><div class="stat-val" id="statTodayAmt">₦0.00</div></div>
+                    <div class="stat-card"><span class="stat-label">Pending</span><div class="stat-val" id="statPending" style="color:var(--warning);">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Confirmed</span><div class="stat-val" id="statConfirmed" style="color:var(--success);">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Rejected</span><div class="stat-val" id="statRejected" style="color:var(--error);">0</div></div>
+                </div>
+
+                <!-- Filters -->
+                <div class="controls">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search reference, email or user ID...">
+                    <div class="filter-row">
+                        <select id="statusFilter" class="filter-select">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <select id="dateFilter" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="month">This Month</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- List Content -->
+                <div id="contentContainer">
+                    <div class="list-container" id="mobileList"></div>
+                    <div class="desktop-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ref</th>
+                                    <th>User</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="desktopBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+                    <p style="color: var(--text-gray);">No deposit records found.</p>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="btn-page" id="prevPage">‹ Prev</button>
+                    <span id="pageInfo" style="font-size: 0.75rem; color: var(--text-gray);">Page 1</span>
+                    <button class="btn-page" id="nextPage">Next ›</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Details -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content">
+            <h2 style="font-family: 'Playfair Display'; color: var(--gold-primary); margin-bottom: 20px; font-size: 1.2rem;">Deposit Detail</h2>
+            <div id="modalBody" style="font-size: 0.85rem; color: var(--text-gray); line-height: 1.8; word-break: break-all;"></div>
+            <button class="btn-view" style="width: 100%; background: var(--gold-gradient); color: #000; margin-top: 20px;" onclick="document.getElementById('detailsModal').style.display='none'">CLOSE</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../src/lib/supabase.js';
+        import { formatCurrency, formatDate } from '../src/utils/format.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileList = document.getElementById('mobileList');
+        const desktopBody = document.getElementById('desktopBody');
+
+        let currentPage = 0;
+        const perPage = 10;
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+            if (!profile || profile.role !== 'admin') { window.location.href = 'login.html'; return; }
+
+            loadStats();
+            loadDeposits();
+        }
+
+        async function loadStats() {
+            // Count aggregations for summary
+            const { count: pending } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+            const { count: confirmed } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'confirmed');
+            const { count: rejected } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
+            
+            document.getElementById('statPending').textContent = pending || 0;
+            document.getElementById('statConfirmed').textContent = confirmed || 0;
+            document.getElementById('statRejected').textContent = rejected || 0;
+            
+            // Financial sums would be calculated server-side/RPC for precision and Hobby efficiency
+        }
+
+        async function loadDeposits() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const dateFilt = document.getElementById('dateFilter').value;
+
+            let query = supabase.from('deposits').select('*', { count: 'exact' });
+
+            if (status !== 'all') query = query.eq('status', status);
+            if (search) query = query.or(`reference.ilike.%${search}%,user_id.ilike.%${search}%`);
+            
+            if (dateFilt === 'today') {
+                const today = new Date(); today.setHours(0,0,0,0);
+                query = query.gte('created_at', today.toISOString());
+            }
+
+            query = query.order('created_at', { ascending: false });
+
+            const { data, count, error } = await query.range(currentPage * perPage, (currentPage + 1) * perPage - 1);
+
+            if (data) {
+                renderData(data);
+                updatePagination(count);
+            }
+        }
+
+        function renderData(items) {
+            mobileList.innerHTML = '';
+            desktopBody.innerHTML = '';
+            document.getElementById('emptyState').style.display = items.length === 0 ? 'block' : 'none';
+
+            items.forEach(item => {
+                const amount = formatCurrency(item.amount);
+                const date = new Date(item.created_at).toLocaleDateString();
+                const statusBadge = `<span class="status-badge status-${item.status}">${item.status}</span>`;
+
+                // Mobile
+                const card = document.createElement('div');
+                card.className = 'deposit-card';
+                card.innerHTML = `
+                    <span class="ref-text">#${item.reference}</span>
+                    <span class="amt-text">${amount}</span>
+                    ${statusBadge}
+                    <div class="card-meta">
+                        <div><span class="meta-label">User ID</span><span class="meta-val">${item.user_id.substring(0,8)}...</span></div>
+                        <div><span class="meta-label">Date</span><span class="meta-val">${date}</span></div>
+                    </div>
+                    <button class="btn-view" onclick="window.showDeposit('${item.id}')">VIEW DETAILS</button>
+                `;
+                mobileList.appendChild(card);
+
+                // Desktop
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-family:monospace; font-size:0.7rem;">${item.reference}</td>
+                    <td style="font-size:0.7rem;">${item.user_id.substring(0,12)}...</td>
+                    <td><b>${amount}</b></td>
+                    <td style="text-transform:uppercase; font-size:0.7rem;">${item.method}</td>
+                    <td>${statusBadge}</td>
+                    <td>${date}</td>
+                    <td><button class="btn-page" onclick="window.showDeposit('${item.id}')">View</button></td>
+                `;
+                desktopBody.appendChild(row);
+            });
+        }
+
+        window.showDeposit = async (id) => {
+            const { data } = await supabase.from('deposits').select('*').eq('id', id).single();
+            if (data) {
+                const body = document.getElementById('modalBody');
+                body.innerHTML = `
+                    <p><b>Deposit ID:</b> ${data.id}</p>
+                    <p><b>Reference:</b> ${data.reference}</p>
+                    <p><b>User Reference:</b> ${data.user_id}</p>
+                    <p><b>Amount:</b> ${formatCurrency(data.amount)}</p>
+                    <p><b>Method:</b> ${data.method}</p>
+                    <p><b>Gateway Ref:</b> ${data.gateway_reference || 'N/A'}</p>
+                    <p><b>Status:</b> ${data.status.toUpperCase()}</p>
+                    <p><b>Created:</b> ${formatDate(data.created_at)}</p>
+                    ${data.confirmed_at ? `<p><b>Confirmed:</b> ${formatDate(data.confirmed_at)}</p>` : ''}
+                `;
+                document.getElementById('detailsModal').style.display = 'flex';
+            }
+        };
+
+        function updatePagination(total) {
+            const totalPages = Math.ceil(total / perPage);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages || 1}`;
+            document.getElementById('prevPage').disabled = currentPage === 0;
+            document.getElementById('nextPage').disabled = (currentPage + 1) >= totalPages;
+        }
+
+        // UI Event Listeners
+        menuToggle.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+        document.getElementById('refreshBtn').onclick = () => { loadStats(); loadDeposits(); };
+        document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
+        document.getElementById('searchInput').oninput = () => { currentPage = 0; loadDeposits(); };
+        document.getElementById('statusFilter').onchange = () => { currentPage = 0; loadDeposits(); };
+        document.getElementById('dateFilter').onchange = () => { currentPage = 0; loadDeposits(); };
+        document.getElementById('prevPage').onclick = () => { if (currentPage > 0) { currentPage--; loadDeposits(); } };
+        document.getElementById('nextPage').onclick = () => { currentPage++; loadDeposits(); };
+
+        init();
+    </script>
+</body>
+</html>
