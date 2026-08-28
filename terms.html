@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Terms & Conditions | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; line-height: 1.6; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 800px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; margin-bottom: 20px; }
+
+        /* Typography */
+        h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--gold-primary); margin-bottom: 10px; }
+        h2 { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gold-primary); }
+        .last-updated { font-size: 0.8rem; color: var(--text-gray); margin-bottom: 30px; display: block; }
+        p { margin-bottom: 15px; font-size: 0.9rem; color: var(--text-gray); }
+
+        /* Highlight Card */
+        .notice-card { background: rgba(212, 175, 55, 0.05); border-left: 4px solid var(--gold-primary); padding: 20px; margin-bottom: 30px; }
+        .notice-card h2 { margin-bottom: 10px; }
+
+        /* Accordion Style Sections */
+        .terms-section { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .terms-header { padding: 18px 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .terms-content { height: 0; overflow: hidden; transition: 0.3s ease-out; }
+        .terms-section.active .terms-content { height: auto; padding-bottom: 20px; }
+        .terms-header i { color: var(--gold-primary); transition: 0.3s; font-style: normal; font-weight: 700; }
+        .terms-section.active .terms-header i { transform: rotate(45deg); }
+
+        /* Sidebar Navigation */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; font-size: 0.95rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 700; }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; margin-left: 0; }
+            .terms-content { height: auto !important; padding-bottom: 20px; }
+            .terms-header { cursor: default; }
+            .terms-header i { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🛡️</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+                <a href="support.html" class="nav-link">Support</a>
+                <a href="terms.html" class="nav-link active">Terms & Conditions</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <h1>Terms & Conditions</h1>
+                <span class="last-updated">Last Updated: August 28, 2026</span>
+
+                <p>These Terms & Conditions govern the use of the FINVORA platform and describe the responsibilities of users and the platform.</p>
+
+                <div class="notice-card">
+                    <h2>Important Notice</h2>
+                    <p>Users should read and understand these Terms & Conditions before using the platform. By accessing FINVORA, you agree to be bound by these rules.</p>
+                </div>
+
+                <!-- Section 1 -->
+                <div class="terms-section">
+                    <div class="terms-header"><h2>1. Account Registration</h2><i>+</i></div>
+                    <div class="terms-content">
+                        <p>Users must provide accurate, current, and complete information during registration. You are solely responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p>
+                        <p>Creation of fraudulent duplicate accounts is prohibited and may lead to account suspension.</p>
+                    </div>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="terms-section">
+                    <div class="terms-header"><h2>2. Deposits</h2><i>+</i></div>
+                    <div class="terms-content">
+                        <p>Deposits must be made through the official FINVORA payment interface. Payment status is determined by verified platform records. A pending deposit does not constitute a completed transaction until confirmed by the backend system.</p>
+                    </div>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="terms-section">
+                    <div class="terms-header"><h2>3. Investments & Earnings</h2><i>+</i></div>
+                    <div class="terms-content">
+                        <p>Users must review the specific details (duration, daily profit, total return) of an investment plan before purchase. Investment outcomes are determined by platform records. FINVORA does not guarantee profit and users should only invest funds they can afford to commit.</p>
+                    </div>
+                </div>
+
+                <!-- Section 4 -->
+                <div class="terms-section">
+                    <div class="terms-header"><h2>4. Withdrawals</h2><i>+</i></div>
+                    <div class="terms-content">
+                        <p>Withdrawal requests are subject to platform rules, including a 7% processing fee. Requests may require administrative review. Users are responsible for providing correct payout bank details; FINVORA is not liable for funds sent to incorrect accounts provided by the user.</p>
+                    </div>
+                </div>
+
+                <!-- Section 5 -->
+                <div class="terms-section">
+                    <div class="terms-header"><h2>5. Referral Program</h2><i>+</i></div>
+                    <div class="terms-content">
+                        <p>Referral commissions are calculated as 20% for Level 1 and 5% for Level 2 of eligible activity. Self-referrals and fraudulent recruitment practices are strictly prohibited and will result in commission forfeiture.</p>
+                    </div>
+                </div>
+
+                <!-- Section 6 -->
+                <div class="terms-section">
+                    <div class="terms-header"><h2>6. Risk Disclosure</h2><i>+</i></div>
+                    <div class="terms-content" style="border: 1px solid rgba(255, 77, 77, 0.2); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                        <p style="color: #ff4d4d; font-weight: 600;">Financial activities involve risk. Users should make decisions based on their own circumstances and understanding. No returns on the platform are government-guaranteed or risk-free.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 40px; text-align: center;">
+                    <h2 style="margin-bottom: 10px;">Need clarification?</h2>
+                    <p>If you have questions regarding these terms, please contact our support team.</p>
+                    <a href="support.html" class="nav-link" style="background: var(--gold-gradient); color: #000; display: inline-block; width: auto; padding: 10px 25px;">Contact Support</a>
+                </div>
+
+                <div style="text-align: center; padding: 40px 0; font-size: 0.8rem; color: var(--text-gray);">
+                    &copy; 2026 FINVORA. All Rights Reserved.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+
+        // Navigation Drawer
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        menuToggle?.addEventListener('click', toggleMenu);
+        overlay?.addEventListener('click', toggleMenu);
+
+        // Accordion Logic
+        document.querySelectorAll('.terms-header').forEach(header => {
+            header.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    const section = header.parentElement;
+                    section.classList.toggle('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
