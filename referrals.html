@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Referrals | FINVORA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Mobile Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.4rem; text-decoration: none; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+
+        /* Summary Card */
+        .summary-card { background: radial-gradient(circle at top right, #001a33, var(--bg-navy)); text-align: center; }
+        .card-label { font-size: 0.75rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; }
+        .earnings-val { font-size: 2rem; font-weight: 700; color: var(--gold-primary); margin: 5px 0; }
+
+        /* Referral Link/Code Section */
+        .ref-box { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; margin-top: 15px; }
+        .ref-label { font-size: 0.7rem; color: var(--text-gray); margin-bottom: 8px; text-align: center; }
+        .ref-value { font-size: 1.2rem; font-weight: 700; color: #fff; text-align: center; margin-bottom: 12px; letter-spacing: 2px; }
+        
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { 
+            padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; 
+            text-align: center; text-decoration: none; transition: 0.2s; 
+        }
+        .btn-gold { background: var(--gold-gradient); color: #000; }
+        .btn-outline { background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary); }
+        .btn:active { transform: scale(0.98); }
+
+        /* Statistics Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: var(--bg-navy); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-val { font-size: 1.2rem; font-weight: 700; color: var(--gold-primary); }
+
+        /* Referral Lists */
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold-primary); margin-bottom: 15px; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .user-item:last-child { border-bottom: none; }
+        .user-name { font-size: 0.9rem; font-weight: 600; }
+        .user-date { font-size: 0.75rem; color: var(--text-gray); }
+        .user-status { font-size: 0.7rem; font-weight: 800; color: var(--gold-primary); }
+
+        /* Tabs for mobile hierarchy */
+        .tabs { display: flex; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); }
+        .tab { padding: 10px 5px; color: var(--text-gray); font-size: 0.85rem; cursor: pointer; position: relative; }
+        .tab.active { color: var(--gold-primary); font-weight: 700; }
+        .tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: var(--gold-primary); }
+
+        /* Navigation Drawer (Mobile) */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 40px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; }
+
+        /* Toast Success Message */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--gold-primary); color: #000; padding: 10px 20px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; display: none; z-index: 5000; }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; }
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .referral-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="toast" id="toast">Copied to clipboard</div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="dashboard.html" class="logo">FINVORA</a>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 40px; display: block; text-align: center;">FINVORA</div>
+            <nav>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="plans.html" class="nav-link">Investment Plans</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="deposit.html" class="nav-link">Deposit</a>
+                <a href="withdraw.html" class="nav-link">Withdraw</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="referrals.html" class="nav-link active">Referrals</a>
+                <a href="gift-code.html" class="nav-link">Gift Code</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: #ff4d4d; margin-top: 20px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <h1 class="section-title">Invite & Earn</h1>
+
+                <div class="card summary-card">
+                    <span class="card-label">Referral Earnings</span>
+                    <div class="earnings-val" id="totalRefEarnings">₦0.00</div>
+                    
+                    <div class="ref-box">
+                        <p class="ref-label">YOUR REFERRAL CODE</p>
+                        <div class="ref-value" id="refCodeDisplay">FINVORA</div>
+                        <div class="action-btns">
+                            <button class="btn btn-outline" id="copyCode">Copy Code</button>
+                            <button class="btn btn-gold" id="shareBtn">Share Link</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="card-label">Total Ref</span>
+                        <div class="stat-val" id="countTotal">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="card-label">Active Ref</span>
+                        <div class="stat-val" id="countActive">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="card-label">Level 1</span>
+                        <div class="stat-val" id="countL1">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="card-label">Level 2</span>
+                        <div class="stat-val" id="countL2">0</div>
+                    </div>
+                </div>
+
+                <div class="referral-content">
+                    <div>
+                        <div class="tabs">
+                            <div class="tab active" data-tab="l1">Level 1 (20%)</div>
+                            <div class="tab" data-tab="l2">Level 2 (5%)</div>
+                            <div class="tab" data-tab="history">History</div>
+                        </div>
+
+                        <div class="card" style="min-height: 200px;">
+                            <div id="listContainer">
+                                <p class="card-label" style="text-align: center; padding: 40px;">Loading data...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="background: rgba(212, 175, 55, 0.03);">
+                        <h2 class="section-title" style="font-size: 1rem;">How it works</h2>
+                        <div style="font-size: 0.85rem; color: var(--text-gray); line-height: 1.6;">
+                            <p style="margin-bottom: 10px;">1. Share your unique link with friends and family.</p>
+                            <p style="margin-bottom: 10px;">2. Earn <b>20%</b> commission when your Level 1 referrals invest.</p>
+                            <p style="margin-bottom: 10px;">3. Earn <b>5%</b> commission when your Level 2 referrals invest.</p>
+                            <p>Track all commissions instantly in your history tab.</p>
+                        </div>
+                        
+                        <div style="margin-top: 25px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                            <p class="card-label" style="margin-bottom: 8px;">Quick Links</p>
+                            <a href="gift-code.html" class="nav-link" style="padding: 10px 0; color: var(--gold-primary); text-decoration: none;">Redeem Gift Code →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import { auth } from './src/lib/auth.js';
+        import { formatCurrency } from './src/utils/format.js';
+
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const toast = document.getElementById('toast');
+        const listContainer = document.getElementById('listContainer');
+
+        // Navigation
+        const toggleMenu = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        menuToggle?.addEventListener('click', toggleMenu);
+        overlay?.addEventListener('click', toggleMenu);
+
+        let userProfile = null;
+        let activeTab = 'l1';
+
+        async function init() {
+            const session = await auth.requireAuth();
+            if (!session) return;
+
+            // Fetch Profile
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+            if (profile) {
+                userProfile = profile;
+                document.getElementById('refCodeDisplay').textContent = profile.referral_code;
+                document.getElementById('totalRefEarnings').textContent = formatCurrency(profile.referral_earnings || 0);
+                
+                // Load counts (example query - assuming schema has these counts or calculated)
+                document.getElementById('countTotal').textContent = profile.total_referrals || 0;
+                document.getElementById('countL1').textContent = profile.l1_referrals || 0;
+                document.getElementById('countL2').textContent = profile.l2_referrals || 0;
+            }
+
+            loadTabData();
+        }
+
+        async function loadTabData() {
+            listContainer.innerHTML = '<p class="card-label" style="text-align: center; padding: 40px;">Loading...</p>';
+            
+            try {
+                if (activeTab === 'l1' || activeTab === 'l2') {
+                    // Fetch referrals for specific level
+                    const level = activeTab === 'l1' ? 1 : 2;
+                    const { data: refs } = await supabase.from('referrals').select('*').eq('referrer_id', userProfile.id).eq('level', level).limit(20);
+                    renderUserList(refs);
+                } else {
+                    // Fetch commission history
+                    const { data: history } = await supabase.from('transactions').select('*').eq('user_id', userProfile.id).eq('type', 'referral').order('created_at', { ascending: false }).limit(20);
+                    renderHistoryList(history);
+                }
+            } catch (err) {
+                listContainer.innerHTML = '<p class="card-label" style="text-align: center; padding: 40px;">No records found.</p>';
+            }
+        }
+
+        function renderUserList(items) {
+            if (!items || items.length === 0) {
+                listContainer.innerHTML = '<p class="card-label" style="text-align: center; padding: 40px;">No referrals yet.</p>';
+                return;
+            }
+            listContainer.innerHTML = items.map(u => `
+                <div class="user-item">
+                    <div>
+                        <div class="user-name">${u.ref_name || 'FINVORA User'}</div>
+                        <div class="user-date">${new Date(u.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div class="user-status">ACTIVE</div>
+                </div>
+            `).join('');
+        }
+
+        function renderHistoryList(items) {
+            if (!items || items.length === 0) {
+                listContainer.innerHTML = '<p class="card-label" style="text-align: center; padding: 40px;">No commissions earned yet.</p>';
+                return;
+            }
+            listContainer.innerHTML = items.map(h => `
+                <div class="user-item">
+                    <div>
+                        <div class="user-name">+${formatCurrency(h.amount)}</div>
+                        <div class="user-date">${new Date(h.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div class="user-status" style="color: var(--gold-primary);">CREDITED</div>
+                </div>
+            `).join('');
+        }
+
+        // Copy/Share Logic
+        const showToast = (msg) => {
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        };
+
+        document.getElementById('copyCode').onclick = () => {
+            navigator.clipboard.writeText(userProfile.referral_code);
+            showToast('Code copied!');
+        };
+
+        document.getElementById('shareBtn').onclick = async () => {
+            const shareUrl = `${window.location.origin}/register.html?ref=${userProfile.referral_code}`;
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Join FINVORA',
+                        text: 'Start your investment journey with me on FINVORA.',
+                        url: shareUrl
+                    });
+                } catch (err) {
+                    navigator.clipboard.writeText(shareUrl);
+                    showToast('Link copied!');
+                }
+            } else {
+                navigator.clipboard.writeText(shareUrl);
+                showToast('Link copied!');
+            }
+        };
+
+        // Tab Switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                activeTab = tab.dataset.tab;
+                loadTabData();
+            };
+        });
+
+        init();
+    </script>
+</body>
+</html>
