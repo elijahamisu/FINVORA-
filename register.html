@@ -151,6 +151,13 @@
             display: block !important;
         }
 
+        .msg-warning {
+            background: rgba(212, 175, 55, 0.08);
+            color: var(--gold-primary);
+            border: 1px solid var(--glass-border);
+            display: block !important;
+        }
+
         /* Responsive Mobile Adjustments */
         @media (max-width: 480px) {
             .auth-card {
@@ -232,13 +239,13 @@
 
         function showMessage(msg, type) {
             messageBox.textContent = msg;
-            messageBox.className = type === 'error' ? 'msg-error' : 'msg-success';
+            messageBox.className = type === 'error' ? 'msg-error' : (type === 'warning' ? 'msg-warning' : 'msg-success');
         }
 
         // 2. Registration Logic
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const fullName = document.getElementById('fullName').value.trim();
             const email = document.getElementById('email').value.trim();
             const phone = document.getElementById('phone').value.trim();
@@ -261,6 +268,34 @@
             messageBox.style.display = 'none';
 
             try {
+                // Step A0: Resolve referral code -> referrer's profile UUID.
+                // `profiles.referred_by` is a UUID column that references
+                // `profiles.id`, NOT the raw referral code string. Storing the
+                // code itself here silently breaks every referral-count query
+                // on the referrals page, since it filters on
+                // `.eq('referred_by', profile.id)`.
+                let referrerId = null;
+                let referralWarning = null;
+
+                if (referralCode) {
+                    const { data: referrer, error: referrerLookupError } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('referral_code', referralCode)
+                        .single();
+
+                    if (referrer) {
+                        referrerId = referrer.id;
+                    } else {
+                        // Invalid/unknown code — don't block signup, just proceed
+                        // without attributing a referrer, and let the user know.
+                        referralWarning = "Referral code not recognized — continuing without it.";
+                        if (referrerLookupError) {
+                            console.warn("Referral lookup error:", referrerLookupError.message);
+                        }
+                    }
+                }
+
                 // Step A: Supabase Auth Sign Up
                 const { data, error } = await supabase.auth.signUp({
                     email,
@@ -277,7 +312,7 @@
 
                 if (data.user) {
                     // Step B: Create the profile record
-                    // Note: In Step 4 (SQL), we will set up triggers/tables. 
+                    // Note: In Step 4 (SQL), we will set up triggers/tables.
                     // This logic assumes the profile table is ready to accept the insert.
                     const { error: profileError } = await supabase
                         .from('profiles')
@@ -287,19 +322,23 @@
                                 full_name: fullName,
                                 email: email,
                                 phone: phone,
-                                referred_by: referralCode || null,
+                                referred_by: referrerId, // UUID of referrer's profile, or null
                                 wallet_balance: 0 // Initialize at zero; bonus logic will be handled server-side
                             }
                         ]);
 
                     if (profileError) {
-                        // If profile creation fails, we still have the Auth user. 
+                        // If profile creation fails, we still have the Auth user.
                         // Log for admin or handle cleanup.
                         console.error("Profile Error:", profileError.message);
                     }
 
-                    showMessage("Registration successful! Redirecting...", "success");
-                    
+                    if (referralWarning) {
+                        showMessage(`Registration successful! ${referralWarning} Redirecting...`, "warning");
+                    } else {
+                        showMessage("Registration successful! Redirecting...", "success");
+                    }
+
                     // Redirect to dashboard after a short delay
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
