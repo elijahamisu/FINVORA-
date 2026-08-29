@@ -269,29 +269,35 @@
 
             try {
                 // Step A0: Resolve referral code -> referrer's profile UUID.
-                // `profiles.referred_by` is a UUID column that references
-                // `profiles.id`, NOT the raw referral code string. Storing the
-                // code itself here silently breaks every referral-count query
-                // on the referrals page, since it filters on
-                // `.eq('referred_by', profile.id)`.
+                //
+                // IMPORTANT: `profiles.referred_by` is a `uuid` column that
+                // references `profiles.id` — NOT the raw referral code string.
+                //
+                // We can't just do a direct `.from('profiles').select().eq('referral_code', ...)`
+                // here, because RLS on `profiles` only allows a user to see
+                // their own row (or their downline). An unauthenticated user
+                // signing up can't see the referrer's row that way, so a
+                // direct select silently returns zero rows.
+                //
+                // Instead we call a SECURITY DEFINER Postgres function
+                // (`get_referrer_id`) that runs with elevated privileges and
+                // returns ONLY the matching id — nothing else about that
+                // profile is exposed. See the accompanying SQL migration.
                 let referrerId = null;
                 let referralWarning = null;
 
                 if (referralCode) {
-                    const { data: referrer, error: referrerLookupError } = await supabase
-                        .from('profiles')
-                        .select('id')
-                        .eq('referral_code', referralCode)
-                        .single();
+                    const { data: resolvedReferrerId, error: rpcError } = await supabase
+                        .rpc('get_referrer_id', { code: referralCode });
 
-                    if (referrer) {
-                        referrerId = referrer.id;
+                    if (resolvedReferrerId) {
+                        referrerId = resolvedReferrerId;
                     } else {
                         // Invalid/unknown code — don't block signup, just proceed
                         // without attributing a referrer, and let the user know.
                         referralWarning = "Referral code not recognized — continuing without it.";
-                        if (referrerLookupError) {
-                            console.warn("Referral lookup error:", referrerLookupError.message);
+                        if (rpcError) {
+                            console.warn("Referral RPC error:", rpcError.message);
                         }
                     }
                 }
