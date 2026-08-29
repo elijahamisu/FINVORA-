@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Platform Settings | FINVORA Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-navy: #050a14;
+            --bg-sidebar: #03060d;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #FFD700 100%);
+            --text-white: #ffffff;
+            --text-gray: #a0aec0;
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --sidebar-width: 260px;
+            --error: #ff4d4d;
+            --success: #00c853;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Header */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(2, 4, 8, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1.1rem; text-decoration: none; letter-spacing: 1px; }
+        .menu-btn { color: var(--gold-primary); font-size: 1.5rem; cursor: pointer; }
+
+        .container { padding: 20px; max-width: 1000px; margin: 0 auto; }
+        .card { background: var(--bg-navy); border: 1px solid var(--glass-border); border-radius: 12px; padding: 25px; margin-bottom: 25px; }
+
+        /* Form styling */
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gold-primary); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 0.75rem; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .input-field { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 14px; border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.3s; }
+        .input-field:focus { border-color: var(--gold-primary); background: rgba(255,255,255,0.08); }
+        .btn-save { padding: 12px 25px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; background: var(--gold-gradient); color: #000; cursor: pointer; transition: 0.3s; width: 100%; }
+        .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Security Info List */
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .info-row:last-child { border: none; }
+        .info-label { font-size: 0.85rem; color: var(--text-gray); }
+        .info-val { font-size: 0.85rem; font-weight: 600; color: #fff; }
+
+        /* Modal / Confirmation */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-navy); border: 1px solid var(--gold-primary); width: 100%; max-width: 450px; border-radius: 16px; padding: 25px; text-align: center; }
+        .modal-title { font-family: 'Playfair Display', serif; color: var(--gold-primary); margin-bottom: 15px; font-size: 1.2rem; }
+        .modal-text { font-size: 0.9rem; color: var(--text-gray); line-height: 1.6; margin-bottom: 25px; }
+
+        /* Navigation Drawer */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg-sidebar); z-index: 2000; transition: 0.3s; padding: 30px 20px; border-right: 1px solid var(--gold-primary); overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; }
+        .overlay.active { display: block; }
+        .nav-link { display: block; padding: 12px 15px; color: var(--text-gray); text-decoration: none; border-radius: 8px; margin-bottom: 2px; font-size: 0.9rem; }
+        .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); font-weight: 600; border-left: 3px solid var(--gold-primary); }
+
+        @media (min-width: 992px) {
+            .layout-wrapper { display: flex; }
+            .sidebar { left: 0; position: sticky; border-right: 1px solid var(--glass-border); }
+            header, .overlay { display: none; }
+            .main-content { flex: 1; margin-left: 0; }
+            .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .btn-save { width: auto; min-width: 180px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="menu-btn" id="menuToggle">☰</div>
+        <a href="index.html" class="logo">FINVORA ADMIN</a>
+        <div style="font-size: 1rem; color: var(--gold-primary);">⚙️</div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo" style="margin-bottom: 30px; display: block; text-align: center; font-size: 1.6rem;">FINVORA</div>
+            <nav>
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="users.html" class="nav-link">Users</a>
+                <a href="plans.html" class="nav-link">Plans</a>
+                <a href="investments.html" class="nav-link">Investments</a>
+                <a href="earnings.html" class="nav-link">Earnings</a>
+                <a href="deposits.html" class="nav-link">Deposits</a>
+                <a href="withdrawals.html" class="nav-link">Withdrawals</a>
+                <a href="transactions.html" class="nav-link">Transactions</a>
+                <a href="reports.html" class="nav-link">Reports</a>
+                <a href="settings.html" class="nav-link active">Settings</a>
+                <a href="#" id="logoutBtn" class="nav-link" style="color: var(--error); margin-top: 30px;">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <h1 style="font-family: 'Playfair Display'; font-size: 1.4rem; margin-bottom: 10px;">Platform Configuration</h1>
+                <p style="font-size: 0.8rem; color: var(--text-gray); margin-bottom: 25px;">Global platform variables and security parameters.</p>
+
+                <div class="settings-grid">
+                    <div>
+                        <!-- General Settings -->
+                        <div class="card">
+                            <h2 class="section-title">General Settings</h2>
+                            <form id="generalForm">
+                                <div class="form-group">
+                                    <label class="form-label">Platform Name</label>
+                                    <input type="text" id="platformName" class="input-field" value="FINVORA">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Support Email/URL</label>
+                                    <input type="text" id="supportContact" class="input-field" placeholder="https://t.me/finvora_support">
+                                </div>
+                                <button type="submit" class="btn-save" id="btnGen">SAVE GENERAL</button>
+                            </form>
+                        </div>
+
+                        <!-- Financial Settings -->
+                        <div class="card">
+                            <h2 class="section-title">Withdrawal Rules</h2>
+                            <form id="withdrawalForm">
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Withdrawal (₦)</label>
+                                    <input type="number" id="minWithdraw" class="input-field" value="650">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Withdrawal Charge (%)</label>
+                                    <input type="number" id="withdrawFee" class="input-field" value="7">
+                                </div>
+                                <button type="submit" class="btn-save" id="btnWith">SAVE WITHDRAWAL RULES</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Referral Settings -->
+                        <div class="card">
+                            <h2 class="section-title">Referral Program</h2>
+                            <form id="referralForm">
+                                <div class="form-group">
+                                    <label class="form-label">Level 1 Commission (%)</label>
+                                    <input type="number" id="refL1" class="input-field" value="20">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Level 2 Commission (%)</label>
+                                    <input type="number" id="refL2" class="input-field" value="5">
+                                </div>
+                                <button type="submit" class="btn-save" id="btnRef">SAVE COMMISSIONS</button>
+                            </form>
+                        </div>
+
+                        <!-- Security Information -->
+                        <div class="card">
+                            <h2 class="section-title">Security & Session</h2>
+                            <div class="info-row"><span class="info-label">Current Admin</span><span class="info-val" id="adminEmail">---</span></div>
+                            <div class="info-row"><span class="info-label">Session Status</span><span class="info-val" style="color:var(--success);">AUTHORIZED</span></div>
+                            <div class="info-row"><span class="info-label">Access Level</span><span class="info-val">Full Platform Admin</span></div>
+                            
+                            <div style="margin-top: 20px;">
+                                <p style="font-size: 0.75rem; color: var(--text-gray); line-height: 1.5;">To change administrative passwords or manage admin accounts, use the Supabase Auth console.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Confirm Configuration Change</h2>
+            <p class="modal-text">You are about to modify a critical financial parameter. This change will affect all future platform calculations. Are you sure you wish to proceed?</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn-save" id="confirmSave">CONFIRM & SAVE</button>
+                <button class="btn-save" style="background:transparent; border:1px solid var(--error); color:var(--error);" onclick="document.getElementById('confirmModal').style.display='none'">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../src/lib/supabase.js';
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const confirmModal = document.getElementById('confirmModal');
+        
+        let pendingSaveFn = null;
+        let isDirty = false;
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            
+            const { data: profile } = await supabase.from('profiles').select('role, email').eq('id', session.user.id).single();
+            if (!profile || profile.role !== 'admin') { window.location.href = 'login.html'; return; }
+
+            document.getElementById('adminEmail').textContent = profile.email;
+            loadPlatformSettings();
+        }
+
+        async function loadPlatformSettings() {
+            // Logic to fetch from authoritative settings table
+            // For now, UI uses configured platform defaults
+        }
+
+        // Form Submit Interceptors
+        const handleFinancialSubmit = (e, callback) => {
+            e.preventDefault();
+            pendingSaveFn = callback;
+            confirmModal.style.display = 'flex';
+        };
+
+        document.getElementById('generalForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnGen');
+            btn.disabled = true;
+            btn.textContent = 'SAVING...';
+            
+            // Authorized update call to api/admin.js (simulated here)
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = 'SAVE GENERAL';
+                alert("General settings updated.");
+                isDirty = false;
+            }, 1000);
+        };
+
+        document.getElementById('withdrawalForm').onsubmit = (e) => handleFinancialSubmit(e, async () => {
+            console.log("Saving financial withdrawal rules...");
+            confirmModal.style.display = 'none';
+        });
+
+        document.getElementById('referralForm').onsubmit = (e) => handleFinancialSubmit(e, async () => {
+            console.log("Saving referral commission structure...");
+            confirmModal.style.display = 'none';
+        });
+
+        document.getElementById('confirmSave').onclick = () => {
+            if (pendingSaveFn) pendingSaveFn();
+        };
+
+        // Navigation
+        menuToggle.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+        document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
+
+        // Unsaved Changes Prompt
+        window.onbeforeunload = (e) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('change', () => isDirty = true);
+        });
+
+        init();
+    </script>
+</body>
+</html>
