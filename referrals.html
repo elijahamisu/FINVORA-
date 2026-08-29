@@ -212,6 +212,9 @@
 
         let userProfile = null;
         let activeTab = 'l1';
+        let l1Ids = [];
+        let l2IdsGlobal = [];
+        let activeIdsGlobal = new Set();
 
         async function init() {
             const session = await auth.requireAuth();
@@ -222,12 +225,53 @@
             if (profile) {
                 userProfile = profile;
                 document.getElementById('refCodeDisplay').textContent = profile.referral_code;
-                document.getElementById('totalRefEarnings').textContent = formatCurrency(profile.referral_earnings || 0);
-                
-                // Load counts (example query - assuming schema has these counts or calculated)
-                document.getElementById('countTotal').textContent = profile.total_referrals || 0;
-                document.getElementById('countL1').textContent = profile.l1_referrals || 0;
-                document.getElementById('countL2').textContent = profile.l2_referrals || 0;
+
+                // profiles has no referral_earnings/total_referrals/l1_referrals/
+                // l2_referrals columns — those never existed. Real referral
+                // commissions live in `transactions` (type='referral'), and
+                // the referral tree itself is derived from profiles.referred_by
+                // (a uuid pointing at the referrer), not a separate `referrals`
+                // table (which doesn't exist in this database).
+                const { data: earningsRows } = await supabase.from('transactions')
+                    .select('amount')
+                    .eq('user_id', profile.id)
+                    .eq('type', 'referral')
+                    .eq('direction', 'in');
+                const totalEarnings = (earningsRows || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+                document.getElementById('totalRefEarnings').textContent = formatCurrency(totalEarnings);
+
+                // Level 1 = direct referrals (referred_by = me)
+                const { data: level1Refs } = await supabase.from('profiles')
+                    .select('id')
+                    .eq('referred_by', profile.id);
+                l1Ids = (level1Refs || []).map(r => r.id);
+
+                // Level 2 = referred by any of my Level 1 referrals
+                let l2Ids = [];
+                if (l1Ids.length > 0) {
+                    const { data: level2Refs } = await supabase.from('profiles')
+                        .select('id')
+                        .in('referred_by', l1Ids);
+                    l2Ids = (level2Refs || []).map(r => r.id);
+                }
+                l2IdsGlobal = l2Ids;
+
+                // "Active" = has at least one active investment
+                const allDownlineIds = [...l1Ids, ...l2Ids];
+                let activeIds = new Set();
+                if (allDownlineIds.length > 0) {
+                    const { data: activeInvestments } = await supabase.from('investments')
+                        .select('user_id')
+                        .in('user_id', allDownlineIds)
+                        .eq('status', 'active');
+                    activeIds = new Set((activeInvestments || []).map(inv => inv.user_id));
+                }
+
+                document.getElementById('countTotal').textContent = allDownlineIds.length;
+                document.getElementById('countL1').textContent = l1Ids.length;
+                document.getElementById('countL2').textContent = l2Ids.length;
+                document.getElementById('countActive').textContent = activeIds.size;
+                activeIdsGlobal = activeIds;
             }
 
             loadTabData();
@@ -235,13 +279,22 @@
 
         async function loadTabData() {
             listContainer.innerHTML = '<p class="card-label" style="text-align: center; padding: 40px;">Loading...</p>';
-            
+
             try {
                 if (activeTab === 'l1' || activeTab === 'l2') {
-                    // Fetch referrals for specific level
-                    const level = activeTab === 'l1' ? 1 : 2;
-                    const { data: refs } = await supabase.from('referrals').select('*').eq('referrer_id', userProfile.id).eq('level', level).limit(20);
-                    renderUserList(refs);
+                    // `referrals` table doesn't exist — the tree is derived from
+                    // profiles.referred_by, already computed in init().
+                    const ids = activeTab === 'l1' ? l1Ids : l2IdsGlobal;
+                    if (ids.length === 0) {
+                        renderUserList([]);
+                    } else {
+                        const { data: refs } = await supabase.from('profiles')
+                            .select('id, full_name, created_at')
+                            .in('id', ids)
+                            .order('created_at', { ascending: false })
+                            .limit(20);
+                        renderUserList(refs);
+                    }
                 } else {
                     // Fetch commission history
                     const { data: history } = await supabase.from('transactions').select('*').eq('user_id', userProfile.id).eq('type', 'referral').order('created_at', { ascending: false }).limit(20);
@@ -260,10 +313,10 @@
             listContainer.innerHTML = items.map(u => `
                 <div class="user-item">
                     <div>
-                        <div class="user-name">${u.ref_name || 'FINVORA User'}</div>
+                        <div class="user-name">${u.full_name || 'FINVORA User'}</div>
                         <div class="user-date">${new Date(u.created_at).toLocaleDateString()}</div>
                     </div>
-                    <div class="user-status">ACTIVE</div>
+                    <div class="user-status" style="color: ${activeIdsGlobal.has(u.id) ? 'var(--gold-primary)' : 'var(--text-gray)'};">${activeIdsGlobal.has(u.id) ? 'ACTIVE' : 'INACTIVE'}</div>
                 </div>
             `).join('');
         }
