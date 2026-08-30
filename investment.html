@@ -123,14 +123,17 @@
                 return;
             }
 
-            // 2. Load Real User Balance
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('wallet_balance')
-                .eq('id', session.user.id)
+            // 2. Load Real User Balance — balances live on `wallets`,
+            // not `profiles` (same bug already fixed in wallet.html
+            // and dashboard.html).
+            const { data: wallet } = await supabase
+                .from('wallets')
+                .select('available_balance')
+                .eq('user_id', session.user.id)
                 .single();
-            
-            currentUser = profile;
+
+            currentUser = wallet;
+            const availableBalance = Number(wallet?.available_balance || 0);
 
             // 3. Render UI
             document.getElementById('dispPlanName').textContent = selectedPlan.name;
@@ -138,10 +141,10 @@
             document.getElementById('dispDays').textContent = `${selectedPlan.days} Days`;
             document.getElementById('dispTotal').textContent = formatCurrency(selectedPlan.total);
             document.getElementById('dispAmount').textContent = formatCurrency(selectedPlan.min);
-            document.getElementById('userBalance').textContent = formatCurrency(profile.wallet_balance);
+            document.getElementById('userBalance').textContent = formatCurrency(availableBalance);
 
             // Check Balance
-            if (profile.wallet_balance < selectedPlan.min) {
+            if (availableBalance < selectedPlan.min) {
                 confirmBtn.style.display = 'none';
                 depositBtn.style.display = 'block';
                 balanceError.style.display = 'block';
@@ -160,7 +163,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ planId: selectedPlan.id })
+                    body: JSON.stringify({ planName: selectedPlan.name })
                 });
 
                 const result = await response.json();
