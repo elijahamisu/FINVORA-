@@ -351,7 +351,11 @@
 
             const { error } = await supabase.from('gift_codes').insert([payload]);
             if (error) {
-                alert("Error creating code. Ensure it is unique.");
+                // DEBUG: show the real error instead of guessing it's a
+                // duplicate — the generic message was masking the actual
+                // cause. Revert to a friendlier message once the root
+                // cause is confirmed and fixed.
+                alert("Error creating code: " + error.message);
             } else {
                 document.getElementById('createModal').style.display = 'none';
                 document.getElementById('createForm').reset();
