@@ -293,12 +293,13 @@
                     if (resolvedReferrerId) {
                         referrerId = resolvedReferrerId;
                     } else {
-                        // Invalid/unknown code — don't block signup, just proceed
-                        // without attributing a referrer, and let the user know.
-                        referralWarning = "Referral code not recognized — continuing without it.";
-                        if (rpcError) {
-                            console.warn("Referral RPC error:", rpcError.message);
-                        }
+                        // DEBUG MODE: surface the actual RPC error on-screen
+                        // (instead of just console.warn) so it's visible on
+                        // mobile without dev tools. Revert to the quieter
+                        // console-only version once the root cause is found.
+                        referralWarning = rpcError
+                            ? `Referral lookup failed: ${rpcError.message}`
+                            : "Referral code not recognized — continuing without it.";
                     }
                 }
 
