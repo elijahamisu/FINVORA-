@@ -367,22 +367,40 @@
 
         async function loadWalletData(user) {
             try {
-                // In a real app, this would fetch from a 'profiles' or 'wallets' table
-                const { data: profile, error } = await supabase
-                    .from('profiles')
+                // Balances live on the `wallets` table, not on `profiles`
+                // (profiles has no wallet_balance / investment_balance /
+                // total_earnings / total_withdrawn columns at all — this
+                // was silently reading undefined and falling back to 0
+                // for every field, same root cause as the dashboard.html
+                // bug fixed earlier).
+                const { data: wallet, error } = await supabase
+                    .from('wallets')
                     .select('*')
-                    .eq('id', user.id)
+                    .eq('user_id', user.id)
                     .single();
 
-                if (profile) {
-                    walletData.available = profile.wallet_balance || 0;
-                    walletData.total = (profile.wallet_balance || 0) + (profile.investment_balance || 0);
-                    
-                    document.getElementById('statDeposited').textContent = formatNaira(profile.total_deposited || 0);
-                    document.getElementById('statWithdrawn').textContent = formatNaira(profile.total_withdrawn || 0);
-                    document.getElementById('statInvested').textContent = formatNaira(profile.investment_balance || 0);
-                    document.getElementById('statEarnings').textContent = formatNaira(profile.total_earnings || 0);
-                    
+                // total_deposited isn't stored as a running total anywhere;
+                // derive it from completed deposit transactions, same
+                // approach already used elsewhere in this project for
+                // referral earnings.
+                const { data: depositRows } = await supabase
+                    .from('transactions')
+                    .select('amount')
+                    .eq('user_id', user.id)
+                    .eq('type', 'deposit')
+                    .eq('direction', 'in')
+                    .eq('status', 'completed');
+                const totalDeposited = (depositRows || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+                if (wallet) {
+                    walletData.available = Number(wallet.available_balance || 0);
+                    walletData.total = Number(wallet.available_balance || 0) + Number(wallet.investment_balance || 0);
+
+                    document.getElementById('statDeposited').textContent = formatNaira(totalDeposited);
+                    document.getElementById('statWithdrawn').textContent = formatNaira(Number(wallet.total_withdrawn || 0));
+                    document.getElementById('statInvested').textContent = formatNaira(Number(wallet.investment_balance || 0));
+                    document.getElementById('statEarnings').textContent = formatNaira(Number(wallet.total_earnings || 0));
+
                     renderBalances();
                 }
 
