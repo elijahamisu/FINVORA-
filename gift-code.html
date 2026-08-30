@@ -243,7 +243,7 @@
 
             try {
                 const session = await auth.getSession();
-                
+
                 // Authoritative Backend Call (api/gift.js)
                 const res = await fetch('/api/gift', {
                     method: 'POST',
@@ -254,7 +254,17 @@
                     body: JSON.stringify({ code })
                 });
 
-                const result = await res.json();
+                // DEBUG: capture raw response text first, since if the
+                // route 404s or crashes it may return an HTML error page
+                // (not JSON), and res.json() would throw before we ever
+                // see what actually came back.
+                const rawText = await res.text();
+                let result;
+                try {
+                    result = JSON.parse(rawText);
+                } catch (parseErr) {
+                    throw new Error(`Non-JSON response (status ${res.status}): ${rawText.slice(0, 200)}`);
+                }
 
                 if (result.success) {
                     document.getElementById('successMsg').textContent = `Success! You received ${formatCurrency(result.value)}.`;
@@ -267,7 +277,8 @@
                 }
 
             } catch (err) {
-                document.getElementById('errorMsg').textContent = 'Connection error. Please try again.';
+                // DEBUG: show the real error instead of a generic message
+                document.getElementById('errorMsg').textContent = err.message || 'Connection error. Please try again.';
                 errorCard.style.display = 'block';
             } finally {
                 redeemBtn.disabled = false;
