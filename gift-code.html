@@ -220,10 +220,10 @@
                 historyList.innerHTML = data.map(item => `
                     <div class="history-item">
                         <div class="hist-info">
-                            <h4>${item.code_label || 'GIFT REWARD'}</h4>
+                            <h4>GIFT REWARD</h4>
                             <p>${new Date(item.created_at).toLocaleDateString()}</p>
                         </div>
-                        <div class="hist-val">${item.reward_value > 0 ? '+' + formatCurrency(item.reward_value) : 'REDEEMED'}</div>
+                        <div class="hist-val">+${formatCurrency(item.reward_amount)}</div>
                     </div>
                 `).join('');
 
