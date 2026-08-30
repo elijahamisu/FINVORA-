@@ -404,7 +404,7 @@
                     renderBalances();
                 }
 
-                // Load Active Investments (Mock query - adjust to real schema)
+                // Load Active Investments
                 const { data: investments } = await supabase
                     .from('investments')
                     .select('*')
@@ -417,7 +417,7 @@
                     invList.innerHTML = investments.map(inv => `
                         <div class="list-card">
                             <div class="list-row">
-                                <span class="list-main">${inv.plan_name}</span>
+                                <span class="list-main">${inv.plan_snapshot?.name || 'Investment Plan'}</span>
                                 <span class="status-badge status-active">Active</span>
                             </div>
                             <div class="list-row">
