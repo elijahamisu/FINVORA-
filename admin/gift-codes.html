@@ -188,7 +188,10 @@
             <form id="createForm">
                 <div class="form-group">
                     <label class="form-label">Gift Code (Alpha-numeric)</label>
-                    <input type="text" id="newCode" class="search-input" placeholder="e.g. WELCOME2026" required>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="newCode" class="search-input" placeholder="e.g. WELCOME2026" required style="flex: 1;">
+                        <button type="button" id="generateCodeBtn" class="btn-primary" style="white-space: nowrap; padding: 0 16px;">GENERATE</button>
+                    </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="form-group">
@@ -221,6 +224,21 @@
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
         const menuToggle = document.getElementById('menuToggle');
+
+        // Generates a random, easy-to-type alphanumeric gift code
+        // (uppercase letters + digits, no ambiguous chars like 0/O/1/I)
+        function generateGiftCode(length = 8) {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < length; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        document.getElementById('generateCodeBtn').addEventListener('click', () => {
+            document.getElementById('newCode').value = generateGiftCode();
+        });
 
         async function init() {
             const { data: { session } } = await supabase.auth.getSession();
