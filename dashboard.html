@@ -306,6 +306,16 @@
 
                 updateUIBalances();
             }
+
+            // Active Plans count — this stat was hardcoded to 0 in the
+            // markup and never actually queried.
+            const { count: activePlansCount } = await supabase
+                .from('investments')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', session.user.id)
+                .eq('status', 'active');
+
+            document.getElementById('activePlans').textContent = activePlansCount || 0;
         }
 
         function updateUIBalances() {
