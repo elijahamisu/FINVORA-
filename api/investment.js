@@ -16,15 +16,19 @@ export default async function handler(req, res) {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return res.status(401).json({ error: 'Invalid session' });
 
-  const { planId } = req.body;
+  const { planName } = req.body;
 
   try {
     // 2. Authoritative Plan Lookup (Server-side)
+    // Matched by name, not id: the frontend's plan selector uses
+    // local display-only IDs (e.g. "VIP1") that don't correspond
+    // to the database's real uuid primary keys. Also note the
+    // actual column is `status` (text), not `active` (boolean).
     const { data: plan, error: planError } = await supabase
       .from('investment_plans')
       .select('*')
-      .eq('id', planId)
-      .eq('active', true)
+      .eq('name', planName)
+      .eq('status', 'active')
       .single();
 
     if (planError || !plan) throw new Error('Invalid or inactive plan');
@@ -35,7 +39,7 @@ export default async function handler(req, res) {
     const { data, error: txError } = await supabase.rpc('create_investment_secure', {
       p_user_id: user.id,
       p_plan_id: plan.id,
-      p_amount: plan.min_amount
+      p_amount: plan.min_investment
     });
 
     if (txError) throw new Error(txError.message);
