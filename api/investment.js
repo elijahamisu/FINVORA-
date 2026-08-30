@@ -38,8 +38,7 @@ export default async function handler(req, res) {
     // creates the investment, and logs the transaction in one go.
     const { data, error: txError } = await supabase.rpc('create_investment_secure', {
       p_user_id: user.id,
-      p_plan_id: plan.id,
-      p_amount: plan.min_investment
+      p_plan_id: plan.id
     });
 
     if (txError) throw new Error(txError.message);
