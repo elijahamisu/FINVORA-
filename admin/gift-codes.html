@@ -276,7 +276,7 @@
 
             items.forEach(item => {
                 const statusBadge = `<span class="status-badge ${item.is_active ? 'status-active' : 'status-inactive'}">${item.is_active ? 'Active' : 'Inactive'}</span>`;
-                const reward = formatCurrency(item.reward_value);
+                const reward = formatCurrency(item.reward_amount);
                 const expiry = item.expires_at ? new Date(item.expires_at).toLocaleDateString() : 'Never';
 
                 // Mobile
@@ -287,7 +287,7 @@
                     ${statusBadge}
                     <div class="card-meta">
                         <div><span class="meta-label">Reward</span><span class="meta-val">${reward}</span></div>
-                        <div><span class="meta-label">Uses</span><span class="meta-val">${item.redemption_count} / ${item.max_redemptions}</span></div>
+                        <div><span class="meta-label">Uses</span><span class="meta-val">${item.used_count} / ${item.usage_limit}</span></div>
                         <div><span class="meta-label">Expires</span><span class="meta-val">${expiry}</span></div>
                         <div><span class="meta-label">Created</span><span class="meta-val">${new Date(item.created_at).toLocaleDateString()}</span></div>
                     </div>
@@ -305,8 +305,8 @@
                 row.innerHTML = `
                     <td style="font-family:'Playfair Display'; letter-spacing:1px; font-weight:700; color:var(--gold-primary);">${item.code}</td>
                     <td><b>${reward}</b></td>
-                    <td>${item.redemption_count}</td>
-                    <td>${item.max_redemptions}</td>
+                    <td>${item.used_count}</td>
+                    <td>${item.usage_limit}</td>
                     <td>${statusBadge}</td>
                     <td>${expiry}</td>
                     <td>
@@ -343,8 +343,9 @@
             e.preventDefault();
             const payload = {
                 code: document.getElementById('newCode').value.trim().toUpperCase(),
-                reward_value: parseFloat(document.getElementById('newReward').value),
-                max_redemptions: parseInt(document.getElementById('newMax').value),
+                reward_amount: parseFloat(document.getElementById('newReward').value),
+                usage_limit: parseInt(document.getElementById('newMax').value),
+                used_count: 0,
                 expires_at: document.getElementById('newExpiry').value || null,
                 is_active: true
             };
