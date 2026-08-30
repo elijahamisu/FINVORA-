@@ -268,49 +268,51 @@
             messageBox.style.display = 'none';
 
             try {
-                // Step A0: Resolve referral code -> referrer's profile UUID.
+                // IMPORTANT — how referrals actually get attributed:
                 //
-                // IMPORTANT: `profiles.referred_by` is a `uuid` column that
-                // references `profiles.id` — NOT the raw referral code string.
+                // The database has a trigger (on_auth_user_created ->
+                // handle_new_user()) that fires the instant
+                // supabase.auth.signUp() creates a new auth user. That
+                // trigger — not this file — is what inserts the row into
+                // `profiles`. It also creates the wallet and welcome-bonus
+                // transaction. It already contains its own referral
+                // resolution logic:
                 //
-                // We can't just do a direct `.from('profiles').select().eq('referral_code', ...)`
-                // here, because RLS on `profiles` only allows a user to see
-                // their own row (or their downline). An unauthenticated user
-                // signing up can't see the referrer's row that way, so a
-                // direct select silently returns zero rows.
+                //   referred_by = (
+                //     select id from public.profiles
+                //     where referral_code = new.raw_user_meta_data->>'referred_by'
+                //     limit 1
+                //   )
                 //
-                // Instead we call a SECURITY DEFINER Postgres function
-                // (`get_referrer_id`) that runs with elevated privileges and
-                // returns ONLY the matching id — nothing else about that
-                // profile is exposed. See the accompanying SQL migration.
-                let referrerId = null;
-                let referralWarning = null;
+                // So the ONLY thing this file needs to do is put the raw
+                // referral code string into the signUp() metadata under
+                // the key `referred_by`. The trigger does the
+                // code -> uuid lookup itself, server-side, with elevated
+                // privileges, so it isn't blocked by RLS.
+                //
+                // Previously this file separately looked up the referrer's
+                // id itself (via an RPC call) and then INSERTed its own
+                // `profiles` row after signUp(). That insert always
+                // collided with the row the trigger had already created
+                // (duplicate primary key on `id`) and failed silently —
+                // and the referral code never reached the trigger's own
+                // resolution logic in the first place, since it was never
+                // included in the signUp metadata. Do NOT re-add a
+                // client-side profiles insert here — it will conflict
+                // with the trigger every time.
 
-                if (referralCode) {
-                    const { data: resolvedReferrerId, error: rpcError } = await supabase
-                        .rpc('get_referrer_id', { code: referralCode });
-
-                    if (resolvedReferrerId) {
-                        referrerId = resolvedReferrerId;
-                    } else {
-                        // DEBUG MODE: surface the actual RPC error on-screen
-                        // (instead of just console.warn) so it's visible on
-                        // mobile without dev tools. Revert to the quieter
-                        // console-only version once the root cause is found.
-                        referralWarning = rpcError
-                            ? `Referral lookup failed: ${rpcError.message}`
-                            : "Referral code not recognized — continuing without it.";
-                    }
-                }
-
-                // Step A: Supabase Auth Sign Up
+                // Step A: Supabase Auth Sign Up.
+                // Pass the referral code straight through as metadata —
+                // the trigger reads raw_user_meta_data->>'referred_by' and
+                // resolves it to the referrer's uuid itself.
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
                         data: {
                             full_name: fullName,
-                            phone: phone
+                            phone: phone,
+                            referred_by: referralCode || null
                         }
                     }
                 });
@@ -318,33 +320,10 @@
                 if (error) throw error;
 
                 if (data.user) {
-                    // Step B: Create the profile record
-                    // Note: In Step 4 (SQL), we will set up triggers/tables.
-                    // This logic assumes the profile table is ready to accept the insert.
-                    const { error: profileError } = await supabase
-                        .from('profiles')
-                        .insert([
-                            {
-                                id: data.user.id,
-                                full_name: fullName,
-                                email: email,
-                                phone: phone,
-                                referred_by: referrerId, // UUID of referrer's profile, or null
-                                wallet_balance: 0 // Initialize at zero; bonus logic will be handled server-side
-                            }
-                        ]);
-
-                    if (profileError) {
-                        // If profile creation fails, we still have the Auth user.
-                        // Log for admin or handle cleanup.
-                        console.error("Profile Error:", profileError.message);
-                    }
-
-                    if (referralWarning) {
-                        showMessage(`Registration successful! ${referralWarning} Redirecting...`, "warning");
-                    } else {
-                        showMessage("Registration successful! Redirecting...", "success");
-                    }
+                    // Nothing else to do here — handle_new_user() has
+                    // already created the profile row (with referred_by
+                    // resolved, wallet, and welcome bonus) via the trigger.
+                    showMessage("Registration successful! Redirecting...", "success");
 
                     // Redirect to dashboard after a short delay
                     setTimeout(() => {
