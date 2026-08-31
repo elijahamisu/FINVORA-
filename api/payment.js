@@ -47,7 +47,9 @@ export default async function handler(req, res) {
       });
     }
     
-    // Existing deposit logic...
+    // Deposits are now a fully manual flow handled entirely client-side in
+    // deposit.html (direct insert into `deposits` with status='pending',
+    // confirmed later by an admin) — no gateway initialization needed here.
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
