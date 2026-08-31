@@ -243,10 +243,12 @@
 
         async function loadStats() {
             const { count: pending } = await supabase.from('withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+            const { count: approved } = await supabase.from('withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'approved');
             const { count: completed } = await supabase.from('withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'completed');
             const { count: rejected } = await supabase.from('withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
-            
+
             document.getElementById('statPending').textContent = pending || 0;
+            document.getElementById('statApproved').textContent = approved || 0;
             document.getElementById('statCompleted').textContent = completed || 0;
             document.getElementById('statRejected').textContent = rejected || 0;
         }
@@ -257,7 +259,8 @@
 
             let query = supabase.from('withdrawals').select('*', { count: 'exact' });
             if (status !== 'all') query = query.eq('status', status);
-            if (search) query = query.or(`reference.ilike.%${search}%,user_id.ilike.%${search}%`);
+            // user_id is a uuid column — ilike against it errors in Postgres.
+            if (search) query = query.ilike('reference', `%${search}%`);
             
             query = query.order('created_at', { ascending: false });
 
@@ -316,40 +319,59 @@
         window.showReview = async (id) => {
             const { data } = await supabase.from('withdrawals').select('*').eq('id', id).single();
             if (data) {
+                const dest = data.destination_details || {};
                 const body = document.getElementById('modalBody');
                 body.innerHTML = `
                     <p><b>Reference:</b> ${data.reference}</p>
                     <p><b>User Reference:</b> ${data.user_id}</p>
                     <p><b>Amount Requested:</b> ${formatCurrency(data.amount)}</p>
-                    <p><b>Fee (7%):</b> ${formatCurrency(data.fee_amount)}</p>
+                    <p><b>Fee (10%):</b> ${formatCurrency(data.fee)}</p>
                     <p style="color:var(--gold-primary); font-size:1rem;"><b>Net Payout: ${formatCurrency(data.net_amount)}</b></p>
                     <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; margin:15px 0;">
-                        <p><b>Bank Name:</b> ${data.bank_name || 'N/A'}</p>
-                        <p><b>Account Number:</b> ${data.account_number || 'N/A'}</p>
-                        <p><b>Account Holder:</b> ${data.account_name || 'N/A'}</p>
+                        <p><b>Bank Name:</b> ${dest.bank || 'N/A'}</p>
+                        <p><b>Account Number:</b> ${dest.accNum || 'N/A'}</p>
+                        <p><b>Account Holder:</b> ${dest.name || 'N/A'}</p>
                     </div>
                     <p><b>Status:</b> ${data.status.toUpperCase()}</p>
                     <p><b>Requested At:</b> ${formatDate(data.created_at)}</p>
                 `;
-                
+
                 const actions = document.getElementById('modalActions');
                 actions.style.display = data.status === 'pending' ? 'grid' : 'none';
-                
-                document.getElementById('approveBtn').onclick = () => window.processAction(data.id, 'approved');
-                document.getElementById('rejectBtn').onclick = () => window.processAction(data.id, 'rejected');
-                
+
+                document.getElementById('approveBtn').onclick = () => window.processAction(data, 'approved');
+                document.getElementById('rejectBtn').onclick = () => window.processAction(data, 'rejected');
+
                 document.getElementById('detailsModal').style.display = 'flex';
             }
         };
 
-        window.processAction = async (id, newStatus) => {
+        // Funds were already reserved (deducted) when the user submitted
+        // the request — approving just changes status. Rejecting must
+        // refund the amount back to the user's wallet, since it was
+        // already taken out at request time.
+        window.processAction = async (withdrawal, newStatus) => {
             if (!confirm(`Confirm ${newStatus} for this withdrawal?`)) return;
-            // Atomic update handled by secure backend logic
-            const { error } = await supabase.from('withdrawals').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
-            if (!error) {
+
+            try {
+                if (newStatus === 'rejected') {
+                    const { data: wallet, error: wErr } = await supabase.from('wallets').select('available_balance').eq('user_id', withdrawal.user_id).single();
+                    if (wErr) throw wErr;
+                    const refunded = Number(wallet?.available_balance || 0) + Number(withdrawal.amount);
+                    const { error: refundErr } = await supabase.from('wallets').update({ available_balance: refunded }).eq('user_id', withdrawal.user_id);
+                    if (refundErr) throw refundErr;
+                }
+
+                const { error } = await supabase.from('withdrawals')
+                    .update({ status: newStatus, processed_at: new Date().toISOString() })
+                    .eq('id', withdrawal.id);
+                if (error) throw error;
+
                 document.getElementById('detailsModal').style.display = 'none';
                 loadStats();
                 loadWithdrawals();
+            } catch (err) {
+                alert('Could not process withdrawal: ' + err.message);
             }
         };
 
