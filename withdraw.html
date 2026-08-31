@@ -135,7 +135,7 @@
                             </div>
 
                             <div class="fee-preview">
-                                <div class="fee-row"><span>Withdrawal Fee (7%)</span><span id="feeDisplay">₦0.00</span></div>
+                                <div class="fee-row"><span>Withdrawal Fee (10%)</span><span id="feeDisplay">₦0.00</span></div>
                                 <div class="fee-row net-receive"><span>You Receive</span><span id="netDisplay">₦0.00</span></div>
                             </div>
 
@@ -169,7 +169,7 @@
                             <h3 style="margin-bottom: 10px; font-size: 1rem; color: var(--gold-primary);">Withdrawal Rules</h3>
                             <ul style="font-size: 0.8rem; color: var(--text-gray); list-style: none;">
                                 <li style="margin-bottom: 5px;">• Minimum withdrawal: ₦650.00</li>
-                                <li style="margin-bottom: 5px;">• Processing Fee: 7%</li>
+                                <li style="margin-bottom: 5px;">• Processing Fee: 10%</li>
                                 <li style="margin-bottom: 5px;">• Hours: 7AM — 9PM Daily</li>
                                 <li>• Requests are reviewed by admin.</li>
                             </ul>
@@ -212,9 +212,10 @@
             const session = await auth.requireAuth();
             if (!session) return;
 
-            // Load Balance
-            const { data: profile } = await supabase.from('profiles').select('wallet_balance').eq('id', session.user.id).single();
-            if (profile) document.getElementById('userBalance').textContent = fmt(profile.wallet_balance);
+            // Load Balance — lives on `wallets`, not `profiles`.
+            const { data: wallet, error: walletErr } = await supabase.from('wallets').select('available_balance').eq('user_id', session.user.id).single();
+            if (walletErr) console.error('Wallet load error:', walletErr.message);
+            if (wallet) document.getElementById('userBalance').textContent = fmt(wallet.available_balance);
 
             // Load History
             const { data: withdrawals } = await supabase.from('withdrawals').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(5);
@@ -241,7 +242,7 @@
         // Live Fee Preview
         amountInput.addEventListener('input', () => {
             const amt = parseFloat(amountInput.value) || 0;
-            const fee = amt * 0.07;
+            const fee = amt * 0.10;
             const net = amt - fee;
             feeDisplay.textContent = fmt(fee);
             netDisplay.textContent = fmt(net > 0 ? net : 0);
