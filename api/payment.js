@@ -35,6 +35,20 @@ export default async function handler(req, res) {
       if (wError || !wallet) throw new Error("Wallet not found");
       if (wallet.available_balance < amount) throw new Error("Insufficient balance");
 
+      // Withdrawals require at least one active investment. This is the
+      // authoritative check — the client-side lock on withdraw.html can be
+      // bypassed via devtools, this cannot.
+      const { data: activeInvestments, error: invErr } = await supabase
+        .from('investments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .limit(1);
+      if (invErr) throw new Error('Could not verify investment status: ' + invErr.message);
+      if (!activeInvestments || activeInvestments.length === 0) {
+        throw new Error('You need at least one active investment before you can withdraw.');
+      }
+
       // 2. Authoritative fee calculation
       const feeAmount = amount * FEE_PERCENT;
       const netAmount = amount - feeAmount;
