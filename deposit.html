@@ -62,6 +62,56 @@
         /* Pending/History UI */
         .status-badge { font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
         .status-pending { background: rgba(212, 175, 55, 0.1); color: var(--gold-primary); }
+        .status-confirmed { background: rgba(0, 200, 83, 0.1); color: #00c853; }
+        .status-failed, .status-cancelled { background: rgba(255, 77, 77, 0.1); color: var(--error); }
+
+        /* Checkout Modal (payment-gateway style) */
+        .checkout-overlay {
+            position: fixed; inset: 0; z-index: 5000; display: none; align-items: flex-end; justify-content: center;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+        }
+        .checkout-overlay.active { display: flex; }
+        .checkout-box {
+            background: var(--bg-navy); width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto;
+            border-radius: 20px 20px 0 0; border-top: 2px solid var(--gold-primary);
+        }
+        @media (min-width: 640px) {
+            .checkout-overlay { align-items: center; padding: 20px; }
+            .checkout-box { border-radius: 20px; }
+        }
+        .checkout-header {
+            padding: 18px 20px; display: flex; align-items: center; justify-content: space-between;
+            background: #000; position: sticky; top: 0;
+        }
+        .checkout-header-title { font-family: 'Playfair Display', serif; color: var(--gold-primary); font-size: 1rem; }
+        .checkout-header-sub { font-size: 0.65rem; color: var(--text-gray); margin-top: 2px; }
+        .checkout-close { color: var(--text-gray); font-size: 1.3rem; cursor: pointer; padding: 4px 8px; }
+
+        .amount-timer-strip {
+            padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);
+        }
+        .strip-label { font-size: 0.6rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+        .strip-amount { font-size: 1.3rem; font-weight: 800; color: #fff; }
+        .strip-timer { font-size: 1rem; font-weight: 800; color: var(--gold-primary); text-align: right; }
+
+        .checkout-body { padding: 20px; }
+        .bank-detail-box { border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+        .bank-row { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .bank-row:last-child { border-bottom: none; }
+        .bank-row-label { font-size: 0.65rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.04em; }
+        .bank-row-val { font-weight: 700; font-size: 0.95rem; }
+        .bank-row-val.big { font-size: 1.3rem; letter-spacing: 0.03em; }
+        .copy-icon { color: var(--gold-primary); cursor: pointer; font-size: 0.9rem; margin-left: 8px; }
+
+        .warn-box { background: rgba(255,171,0,0.08); border: 1px solid rgba(255,171,0,0.2); border-radius: 10px; padding: 12px 14px; font-size: 0.75rem; color: #ffab00; margin-bottom: 18px; line-height: 1.5; }
+
+        .checkout-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 14px; border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none; margin-bottom: 14px; }
+
+        .back-link { font-size: 0.75rem; color: var(--text-gray); cursor: pointer; display: inline-block; margin-bottom: 14px; }
+
+        .success-box { text-align: center; padding: 30px 20px; }
+        .success-icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(0,200,83,0.1); color: #00c853; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
         
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .history-item:last-child { border: none; }
@@ -145,9 +195,9 @@
                             <h2 class="card-title">Instructions</h2>
                             <p class="label" style="line-height: 1.6;">
                                 1. Enter the amount you wish to deposit.<br>
-                                2. Click "Proceed" to initialize your payment.<br>
-                                3. Complete the transaction via the secure gateway.<br>
-                                4. Your wallet will be credited automatically upon verification.
+                                2. Click "Proceed" to see our bank transfer details.<br>
+                                3. Send the exact amount from your own bank/OPay app.<br>
+                                4. Confirm your payment details — your wallet is credited manually after an admin verifies the transfer.
                             </p>
                         </div>
 
@@ -170,6 +220,79 @@
         </main>
     </div>
 
+    <!-- Checkout Modal -->
+    <div class="checkout-overlay" id="checkoutOverlay">
+        <div class="checkout-box">
+            <div class="checkout-header">
+                <div>
+                    <div class="checkout-header-title">Secure Checkout</div>
+                    <div class="checkout-header-sub">FINVORA Manual Transfer</div>
+                </div>
+                <span class="checkout-close" id="closeCheckout">&times;</span>
+            </div>
+
+            <div class="amount-timer-strip">
+                <div>
+                    <span class="strip-label">Amount Due</span>
+                    <span class="strip-amount" id="checkoutAmount">₦0.00</span>
+                </div>
+                <div>
+                    <span class="strip-label">Time Remaining</span>
+                    <div class="strip-timer" id="checkoutTimer">15:00</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Bank Details -->
+            <div class="checkout-body" id="stepPay">
+                <p class="label" style="margin-bottom: 14px; line-height: 1.5;">Transfer the exact amount above to the account below.</p>
+                <div class="bank-detail-box">
+                    <div class="bank-row">
+                        <span class="bank-row-label">Bank</span>
+                        <span class="bank-row-val">OPay</span>
+                    </div>
+                    <div class="bank-row">
+                        <span class="bank-row-label">Account Name</span>
+                        <span class="bank-row-val">GLORY MICHAEL</span>
+                    </div>
+                    <div class="bank-row">
+                        <span class="bank-row-label">Account Number</span>
+                        <span class="bank-row-val big" id="acctNumVal">6578299180</span>
+                        <span class="copy-icon" id="copyAcctBtn">⧉</span>
+                    </div>
+                </div>
+                <div class="warn-box">⚠ Send the exact amount shown. This is a fully manual process — your wallet is credited only after an admin verifies the transfer, not automatically.</div>
+                <button class="btn-gold" id="madePaymentBtn">I'VE MADE THIS TRANSFER</button>
+            </div>
+
+            <!-- Step 2: Confirm Payer Details -->
+            <div class="checkout-body" id="stepConfirm" style="display: none;">
+                <span class="back-link" id="backToPay">‹ Back</span>
+                <p class="label" style="margin-bottom: 14px;">Tell us which account you paid from, so admin can match your transfer.</p>
+                <label class="label">Account Name</label>
+                <input type="text" id="payerAccountName" class="checkout-input" placeholder="Name on the account you paid from">
+                <label class="label">Bank / Platform Name</label>
+                <input type="text" id="payerBankName" class="checkout-input" placeholder="e.g. OPay, GTBank, Kuda">
+                <button class="btn-gold" id="submitDepositBtn">CONFIRM DEPOSIT</button>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div class="checkout-body success-box" id="stepSuccess" style="display: none;">
+                <div class="success-icon">✓</div>
+                <h3 style="font-family: 'Playfair Display', serif; margin-bottom: 8px;">Deposit Submitted</h3>
+                <p class="label" style="margin-bottom: 20px; line-height: 1.5;">We've recorded your deposit as pending. An admin will manually verify it and credit your wallet shortly.</p>
+                <button class="btn-gold" id="closeSuccessBtn">DONE</button>
+            </div>
+
+            <!-- Step 4: Expired -->
+            <div class="checkout-body success-box" id="stepExpired" style="display: none;">
+                <div class="success-icon" style="background: rgba(255,77,77,0.1); color: var(--error);">!</div>
+                <h3 style="font-family: 'Playfair Display', serif; margin-bottom: 8px;">Session Expired</h3>
+                <p class="label" style="margin-bottom: 20px; line-height: 1.5;">This checkout session timed out. If you already sent the transfer, don't worry — start again with the same amount and confirm your payment details.</p>
+                <button class="btn-gold" id="restartCheckoutBtn">START AGAIN</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { supabase } from './src/lib/supabase.js';
         import { auth } from './src/lib/auth.js';
@@ -188,19 +311,24 @@
         logoutBtn?.addEventListener('click', async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; });
 
         // Format Currency
-        const formatNGN = (v) => `₦${Number(v).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        const formatNGN = (v) => `₦${Number(v || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        let currentUser = null;
 
         async function init() {
             const session = await auth.getSession();
             if (!session) { window.location.href = 'login.html'; return; }
-            const user = session.user;
+            currentUser = session.user;
 
-            // Load Balance
-            const { data: profile } = await supabase.from('profiles').select('wallet_balance').eq('id', user.id).single();
-            if (profile) document.getElementById('walletBalance').textContent = formatNGN(profile.wallet_balance);
+            // Balances live on `wallets`, not `profiles` — profiles has no
+            // wallet_balance column at all.
+            const { data: wallet, error: walletErr } = await supabase.from('wallets').select('available_balance').eq('user_id', currentUser.id).single();
+            if (walletErr) console.error('Wallet load error:', walletErr.message);
+            if (wallet) document.getElementById('walletBalance').textContent = formatNGN(wallet.available_balance);
 
             // Load History
-            const { data: deposits } = await supabase.from('deposits').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
+            const { data: deposits, error: depErr } = await supabase.from('deposits').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(5);
+            if (depErr) console.error('Deposit history load error:', depErr.message);
             renderHistory(deposits);
         }
 
@@ -221,34 +349,136 @@
             `).join('');
         }
 
-        proceedBtn.addEventListener('click', async () => {
+        // ==================== Manual Checkout Flow ====================
+        // Everything here is manual by design: no /api/payment gateway call,
+        // no automatic crediting. The deposit is inserted as 'pending' and
+        // only an admin action (admin/deposits.html) can move it to
+        // 'confirmed' and credit the wallet.
+
+        const checkoutOverlay = document.getElementById('checkoutOverlay');
+        let checkoutAmount = 0;
+        let checkoutTimerInterval = null;
+        let hasReachedConfirmStep = false;
+        let checkoutExpired = false;
+
+        function hideAllCheckoutSteps() {
+            document.getElementById('stepPay').style.display = 'none';
+            document.getElementById('stepConfirm').style.display = 'none';
+            document.getElementById('stepSuccess').style.display = 'none';
+            document.getElementById('stepExpired').style.display = 'none';
+        }
+
+        function showPayStep() {
+            hasReachedConfirmStep = false;
+            if (checkoutExpired) { showExpiredStep(); return; }
+            hideAllCheckoutSteps();
+            document.getElementById('stepPay').style.display = 'block';
+        }
+        function showConfirmStep() {
+            hasReachedConfirmStep = true;
+            hideAllCheckoutSteps();
+            document.getElementById('stepConfirm').style.display = 'block';
+        }
+        function showSuccessStep() {
+            hasReachedConfirmStep = true;
+            hideAllCheckoutSteps();
+            document.getElementById('stepSuccess').style.display = 'block';
+            clearInterval(checkoutTimerInterval);
+        }
+        function showExpiredStep() {
+            hideAllCheckoutSteps();
+            document.getElementById('stepExpired').style.display = 'block';
+        }
+
+        function startCheckoutTimer() {
+            let secondsLeft = 15 * 60;
+            const timerEl = document.getElementById('checkoutTimer');
+            checkoutExpired = false;
+            hasReachedConfirmStep = false;
+            clearInterval(checkoutTimerInterval);
+            checkoutTimerInterval = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft <= 0) {
+                    clearInterval(checkoutTimerInterval);
+                    timerEl.textContent = '00:00';
+                    checkoutExpired = true;
+                    if (!hasReachedConfirmStep) showExpiredStep();
+                    return;
+                }
+                const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+                const s = (secondsLeft % 60).toString().padStart(2, '0');
+                timerEl.textContent = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function openCheckout(amount) {
+            checkoutAmount = amount;
+            document.getElementById('checkoutAmount').textContent = formatNGN(amount);
+            showPayStep();
+            checkoutOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            startCheckoutTimer();
+        }
+
+        function closeCheckout() {
+            checkoutOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            clearInterval(checkoutTimerInterval);
+            document.getElementById('payerAccountName').value = '';
+            document.getElementById('payerBankName').value = '';
+        }
+
+        proceedBtn.addEventListener('click', () => {
             const amount = parseFloat(amountInput.value);
             if (isNaN(amount) || amount < 2800) { alert("Minimum deposit is ₦2,800"); return; }
+            openCheckout(amount);
+        });
 
-            proceedBtn.disabled = true;
-            proceedBtn.textContent = "Creating Payment...";
+        document.getElementById('closeCheckout').addEventListener('click', closeCheckout);
+        document.getElementById('closeSuccessBtn').addEventListener('click', () => { closeCheckout(); window.location.reload(); });
+        document.getElementById('restartCheckoutBtn').addEventListener('click', closeCheckout);
+        document.getElementById('backToPay').addEventListener('click', showPayStep);
+
+        document.getElementById('madePaymentBtn').addEventListener('click', showConfirmStep);
+
+        document.getElementById('copyAcctBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText('6578299180');
+            const btn = document.getElementById('copyAcctBtn');
+            const original = btn.textContent;
+            btn.textContent = '✓';
+            setTimeout(() => { btn.textContent = original; }, 1500);
+        });
+
+        document.getElementById('submitDepositBtn').addEventListener('click', async () => {
+            const payerAccountName = document.getElementById('payerAccountName').value.trim();
+            const payerBankName = document.getElementById('payerBankName').value.trim();
+            if (!payerAccountName || !payerBankName) { alert('Please enter both the account name and bank you paid from.'); return; }
+
+            const btn = document.getElementById('submitDepositBtn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
 
             try {
-                const session = await auth.getSession();
-                const res = await fetch('/api/payment', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({ action: 'initialize', amount })
-                });
+                // reference has no DB default, so it's generated here.
+                const reference = `DEP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-                const result = await res.json();
-                if (!result.success) throw new Error(result.error);
+                const { error } = await supabase.from('deposits').insert([{
+                    user_id: currentUser.id,
+                    reference,
+                    amount: checkoutAmount,
+                    status: 'pending',
+                    payment_method: 'bank_transfer',
+                    payer_account_name: payerAccountName,
+                    payer_bank_name: payerBankName
+                }]);
 
-                alert(`Deposit Request Created!\nReference: ${result.reference}\nStatus: Pending verification.`);
-                window.location.reload();
+                if (error) throw error;
 
+                showSuccessStep();
             } catch (err) {
-                alert(err.message);
-                proceedBtn.disabled = false;
-                proceedBtn.textContent = "PROCEED TO DEPOSIT";
+                alert('Could not submit deposit: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = 'CONFIRM DEPOSIT';
             }
         });
 
