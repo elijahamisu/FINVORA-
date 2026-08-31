@@ -19,19 +19,21 @@ export default async function handler(req, res) {
   try {
     if (action === 'withdraw') {
       const MIN_WITHDRAWAL = 650;
-      const FEE_PERCENT = 0.07;
+      const FEE_PERCENT = 0.10;
 
       if (amount < MIN_WITHDRAWAL) throw new Error(`Minimum withdrawal is ₦${MIN_WITHDRAWAL}`);
 
-      // 1. Authoritative balance check
-      const { data: profile, error: pError } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('id', user.id)
+      // 1. Authoritative balance check — balances live on `wallets`, not
+      // `profiles` (profiles has no wallet_balance column at all, which is
+      // why this previously errored and got misreported as "Profile not found").
+      const { data: wallet, error: wError } = await supabase
+        .from('wallets')
+        .select('available_balance')
+        .eq('user_id', user.id)
         .single();
 
-      if (pError || !profile) throw new Error("Profile not found");
-      if (profile.wallet_balance < amount) throw new Error("Insufficient balance");
+      if (wError || !wallet) throw new Error("Wallet not found");
+      if (wallet.available_balance < amount) throw new Error("Insufficient balance");
 
       // 2. Authoritative fee calculation
       const feeAmount = amount * FEE_PERCENT;
