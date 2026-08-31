@@ -64,7 +64,7 @@
         .status-badge { position: absolute; top: 18px; right: 18px; font-size: 0.6rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
         .status-confirmed { background: rgba(0, 200, 83, 0.1); color: var(--success); }
         .status-pending { background: rgba(255, 171, 0, 0.1); color: var(--warning); }
-        .status-rejected { background: rgba(255, 77, 77, 0.1); color: var(--error); }
+        .status-cancelled, .status-failed { background: rgba(255, 77, 77, 0.1); color: var(--error); }
 
         .btn-view { width: 100%; margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
 
@@ -146,7 +146,7 @@
                     <div class="stat-card"><span class="stat-label">Today</span><div class="stat-val" id="statTodayAmt">₦0.00</div></div>
                     <div class="stat-card"><span class="stat-label">Pending</span><div class="stat-val" id="statPending" style="color:var(--warning);">0</div></div>
                     <div class="stat-card"><span class="stat-label">Confirmed</span><div class="stat-val" id="statConfirmed" style="color:var(--success);">0</div></div>
-                    <div class="stat-card"><span class="stat-label">Rejected</span><div class="stat-val" id="statRejected" style="color:var(--error);">0</div></div>
+                    <div class="stat-card"><span class="stat-label">Cancelled</span><div class="stat-val" id="statRejected" style="color:var(--error);">0</div></div>
                 </div>
 
                 <!-- Filters -->
@@ -157,7 +157,8 @@
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
-                            <option value="rejected">Rejected</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="failed">Failed</option>
                         </select>
                         <select id="dateFilter" class="filter-select">
                             <option value="all">All Time</option>
@@ -239,12 +240,12 @@
             // Count aggregations for summary
             const { count: pending } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'pending');
             const { count: confirmed } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'confirmed');
-            const { count: rejected } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
-            
+            const { count: cancelled } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'cancelled');
+
             document.getElementById('statPending').textContent = pending || 0;
             document.getElementById('statConfirmed').textContent = confirmed || 0;
-            document.getElementById('statRejected').textContent = rejected || 0;
-            
+            document.getElementById('statRejected').textContent = cancelled || 0;
+
             // Financial sums would be calculated server-side/RPC for precision and Hobby efficiency
         }
 
@@ -256,7 +257,9 @@
             let query = supabase.from('deposits').select('*', { count: 'exact' });
 
             if (status !== 'all') query = query.eq('status', status);
-            if (search) query = query.or(`reference.ilike.%${search}%,user_id.ilike.%${search}%`);
+            // user_id is a uuid column — ilike against it errors, so search
+            // is scoped to the text `reference` column only.
+            if (search) query = query.ilike('reference', `%${search}%`);
             
             if (dateFilt === 'today') {
                 const today = new Date(); today.setHours(0,0,0,0);
@@ -293,8 +296,15 @@
                     <div class="card-meta">
                         <div><span class="meta-label">User ID</span><span class="meta-val">${item.user_id.substring(0,8)}...</span></div>
                         <div><span class="meta-label">Date</span><span class="meta-val">${date}</span></div>
+                        <div><span class="meta-label">Paid From</span><span class="meta-val">${item.payer_account_name || '—'}</span></div>
+                        <div><span class="meta-label">Bank</span><span class="meta-val">${item.payer_bank_name || item.payment_method || '—'}</span></div>
                     </div>
-                    <button class="btn-view" onclick="window.showDeposit('${item.id}')">VIEW DETAILS</button>
+                    ${item.status === 'pending' ? `
+                        <div style="display:flex; gap:8px; margin-top: 15px;">
+                            <button class="btn-view" style="background: rgba(0,200,83,0.1); border-color: rgba(0,200,83,0.3); color: var(--success);" onclick="window.confirmDeposit('${item.id}', '${item.user_id}', ${item.amount})">CONFIRM</button>
+                            <button class="btn-view" style="background: rgba(255,77,77,0.1); border-color: rgba(255,77,77,0.3); color: var(--error);" onclick="window.cancelDeposit('${item.id}')">CANCEL</button>
+                        </div>
+                    ` : `<button class="btn-view" onclick="window.showDeposit('${item.id}')">VIEW DETAILS</button>`}
                 `;
                 mobileList.appendChild(card);
 
@@ -304,10 +314,17 @@
                     <td style="font-family:monospace; font-size:0.7rem;">${item.reference}</td>
                     <td style="font-size:0.7rem;">${item.user_id.substring(0,12)}...</td>
                     <td><b>${amount}</b></td>
-                    <td style="text-transform:uppercase; font-size:0.7rem;">${item.method}</td>
+                    <td style="text-transform:uppercase; font-size:0.7rem;">${item.payment_method || '—'}</td>
                     <td>${statusBadge}</td>
                     <td>${date}</td>
-                    <td><button class="btn-page" onclick="window.showDeposit('${item.id}')">View</button></td>
+                    <td>
+                        ${item.status === 'pending' ? `
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-page" style="color: var(--success); border-color: rgba(0,200,83,0.3);" onclick="window.confirmDeposit('${item.id}', '${item.user_id}', ${item.amount})">Confirm</button>
+                                <button class="btn-page" style="color: var(--error); border-color: rgba(255,77,77,0.3);" onclick="window.cancelDeposit('${item.id}')">Cancel</button>
+                            </div>
+                        ` : `<button class="btn-page" onclick="window.showDeposit('${item.id}')">View</button>`}
+                    </td>
                 `;
                 desktopBody.appendChild(row);
             });
@@ -322,13 +339,50 @@
                     <p><b>Reference:</b> ${data.reference}</p>
                     <p><b>User Reference:</b> ${data.user_id}</p>
                     <p><b>Amount:</b> ${formatCurrency(data.amount)}</p>
-                    <p><b>Method:</b> ${data.method}</p>
-                    <p><b>Gateway Ref:</b> ${data.gateway_reference || 'N/A'}</p>
+                    <p><b>Method:</b> ${data.payment_method || 'N/A'}</p>
+                    <p><b>Paid From:</b> ${data.payer_account_name || 'N/A'} (${data.payer_bank_name || 'N/A'})</p>
                     <p><b>Status:</b> ${data.status.toUpperCase()}</p>
                     <p><b>Created:</b> ${formatDate(data.created_at)}</p>
                     ${data.confirmed_at ? `<p><b>Confirmed:</b> ${formatDate(data.confirmed_at)}</p>` : ''}
                 `;
                 document.getElementById('detailsModal').style.display = 'flex';
+            }
+        };
+
+        // Manual confirmation: credits the wallet and marks the deposit
+        // confirmed. This is the step that makes the whole flow "manual" —
+        // nothing credits a wallet without this explicit admin action.
+        window.confirmDeposit = async (depositId, userId, amount) => {
+            if (!confirm(`Confirm this deposit of ${formatCurrency(amount)}? This will credit the user's wallet.`)) return;
+            try {
+                const { data: wallet, error: walletFetchErr } = await supabase.from('wallets').select('available_balance').eq('user_id', userId).single();
+                if (walletFetchErr) throw walletFetchErr;
+
+                const newBalance = Number(wallet?.available_balance || 0) + Number(amount);
+                const { error: walletErr } = await supabase.from('wallets').update({ available_balance: newBalance }).eq('user_id', userId);
+                if (walletErr) throw walletErr;
+
+                const { error: depErr } = await supabase.from('deposits')
+                    .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+                    .eq('id', depositId);
+                if (depErr) throw depErr;
+
+                loadStats();
+                loadDeposits();
+            } catch (err) {
+                alert('Could not confirm deposit: ' + err.message);
+            }
+        };
+
+        window.cancelDeposit = async (depositId) => {
+            if (!confirm('Cancel this deposit request? No funds will be credited.')) return;
+            try {
+                const { error } = await supabase.from('deposits').update({ status: 'cancelled' }).eq('id', depositId);
+                if (error) throw error;
+                loadStats();
+                loadDeposits();
+            } catch (err) {
+                alert('Could not cancel deposit: ' + err.message);
             }
         };
 
