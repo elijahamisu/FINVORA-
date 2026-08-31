@@ -352,6 +352,33 @@
         // Manual confirmation: credits the wallet and marks the deposit
         // confirmed. This is the step that makes the whole flow "manual" —
         // nothing credits a wallet without this explicit admin action.
+        function genReference(prefix) {
+            return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        }
+
+        // Credits a referral commission to one referrer's wallet and logs a
+        // matching transaction (type='referral'), matching exactly what
+        // referrals.html already reads to compute "Referral Earnings".
+        async function creditReferralCommission(referrerId, amount, level, sourceUserName) {
+            const { data: refWallet, error: rwErr } = await supabase.from('wallets').select('available_balance').eq('user_id', referrerId).single();
+            if (rwErr) { console.error(`L${level} referrer wallet fetch error:`, rwErr.message); return; }
+
+            const newBalance = Number(refWallet?.available_balance || 0) + amount;
+            const { error: updErr } = await supabase.from('wallets').update({ available_balance: newBalance }).eq('user_id', referrerId);
+            if (updErr) { console.error(`L${level} referrer wallet credit error:`, updErr.message); return; }
+
+            const { error: txErr } = await supabase.from('transactions').insert([{
+                user_id: referrerId,
+                reference: genReference('REF'),
+                type: 'referral',
+                amount,
+                direction: 'in',
+                status: 'completed',
+                description: `Level ${level} referral commission from ${sourceUserName || 'a referred user'}'s deposit`
+            }]);
+            if (txErr) console.error(`L${level} referral transaction log error:`, txErr.message);
+        }
+
         window.confirmDeposit = async (depositId, userId, amount) => {
             if (!confirm(`Confirm this deposit of ${formatCurrency(amount)}? This will credit the user's wallet.`)) return;
             try {
@@ -366,6 +393,32 @@
                     .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
                     .eq('id', depositId);
                 if (depErr) throw depErr;
+
+                // Log the deposit itself as a transaction (wasn't happening
+                // before — no page relied on it yet, but it belongs in the ledger).
+                await supabase.from('transactions').insert([{
+                    user_id: userId,
+                    reference: genReference('DEP'),
+                    type: 'deposit',
+                    amount: Number(amount),
+                    direction: 'in',
+                    status: 'completed',
+                    description: 'Deposit confirmed by admin'
+                }]);
+
+                // Two-level referral commission: 20% to the direct (Level 1)
+                // referrer, 5% to that referrer's own referrer (Level 2) —
+                // matching the rates already displayed on referrals.html.
+                const { data: depositorProfile } = await supabase.from('profiles').select('full_name, referred_by').eq('id', userId).single();
+                if (depositorProfile?.referred_by) {
+                    const l1ReferrerId = depositorProfile.referred_by;
+                    await creditReferralCommission(l1ReferrerId, Number(amount) * 0.20, 1, depositorProfile.full_name);
+
+                    const { data: l1Profile } = await supabase.from('profiles').select('referred_by').eq('id', l1ReferrerId).single();
+                    if (l1Profile?.referred_by) {
+                        await creditReferralCommission(l1Profile.referred_by, Number(amount) * 0.05, 2, depositorProfile.full_name);
+                    }
+                }
 
                 loadStats();
                 loadDeposits();
