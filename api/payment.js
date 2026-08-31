@@ -39,11 +39,37 @@ export default async function handler(req, res) {
       const feeAmount = amount * FEE_PERCENT;
       const netAmount = amount - feeAmount;
 
-      // 3. Atomic Transaction (handled via RPC in SQL step)
-      // For now, we return the calculated values for the UI to handle the next state
+      const reference = `WTH-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+      // 3. Reserve the funds immediately (deduct the full requested amount,
+      // not just the net) so the same balance can't be withdrawn twice
+      // while this request sits pending. If admin rejects, the amount is
+      // refunded back (handled in admin/withdrawals.html).
+      const { error: deductErr } = await supabase
+        .from('wallets')
+        .update({ available_balance: wallet.available_balance - amount })
+        .eq('user_id', user.id);
+      if (deductErr) throw new Error('Could not reserve funds: ' + deductErr.message);
+
+      const { error: insertErr } = await supabase.from('withdrawals').insert([{
+        user_id: user.id,
+        reference,
+        amount,
+        fee: feeAmount,
+        net_amount: netAmount,
+        status: 'pending',
+        destination_details: payoutDetails || {}
+      }]);
+      if (insertErr) {
+        // Roll back the reservation if the insert failed, so funds aren't
+        // stuck deducted with no matching withdrawal record.
+        await supabase.from('wallets').update({ available_balance: wallet.available_balance }).eq('user_id', user.id);
+        throw new Error('Could not save withdrawal request: ' + insertErr.message);
+      }
+
       return res.status(200).json({
         success: true,
-        reference: `WTH-${Date.now()}`,
+        reference,
         fee: feeAmount,
         net: netAmount
       });
