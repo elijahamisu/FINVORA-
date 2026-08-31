@@ -124,7 +124,11 @@
                         <!-- Form -->
                         <div class="card">
                             <h3 style="margin-bottom: 20px; font-family: 'Playfair Display';">Request Withdrawal</h3>
-                            
+
+                            <div id="noActiveInvestmentBanner" style="display: none; background: rgba(255,171,0,0.08); border: 1px solid rgba(255,171,0,0.2); border-radius: 10px; padding: 14px; font-size: 0.8rem; color: #ffab00; margin-bottom: 18px; line-height: 1.5;">
+                                ⚠ You need at least one active investment before you can withdraw. <a href="investment.html" style="color: #ffab00; font-weight: 700;">View investment plans →</a>
+                            </div>
+
                             <div class="form-group">
                                 <label class="label">Amount to Withdraw</label>
                                 <div class="input-group">
@@ -208,6 +212,8 @@
         // Format Currency
         const fmt = (v) => `₦${Number(v).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
+        let hasActiveInvestment = false;
+
         async function init() {
             const session = await auth.requireAuth();
             if (!session) return;
@@ -216,6 +222,19 @@
             const { data: wallet, error: walletErr } = await supabase.from('wallets').select('available_balance').eq('user_id', session.user.id).single();
             if (walletErr) console.error('Wallet load error:', walletErr.message);
             if (wallet) document.getElementById('userBalance').textContent = fmt(wallet.available_balance);
+
+            // Withdrawals require at least one active investment.
+            const { data: activeInvestments, error: invErr } = await supabase.from('investments').select('id').eq('user_id', session.user.id).eq('status', 'active');
+            if (invErr) console.error('Investments load error:', invErr.message);
+            hasActiveInvestment = (activeInvestments || []).length > 0;
+
+            const banner = document.getElementById('noActiveInvestmentBanner');
+            if (!hasActiveInvestment) {
+                banner.style.display = 'block';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            }
 
             // Load History
             const { data: withdrawals } = await supabase.from('withdrawals').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(5);
@@ -256,6 +275,7 @@
             const confirmed = document.getElementById('confirmCheck').checked;
 
             if (!amount || amount < 650) return alert("Minimum ₦650");
+            if (!hasActiveInvestment) return alert("You need at least one active investment before you can withdraw.");
             if (!accNum || accNum.length < 10) return alert("Invalid Account Number");
             if (!bank || !name) return alert("Fill all bank details");
             if (!confirmed) return alert("Confirm details first");
