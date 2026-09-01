@@ -9,8 +9,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ACTIONS = ['adjust_balance', 'assign_plan', 'remove_investment', 'delete_user', 'set_status', 'list_plans'];
-const NO_USER_ID_REQUIRED = ['list_plans'];
+const ACTIONS = ['adjust_balance', 'assign_plan', 'remove_investment', 'delete_user', 'set_status', 'list_plans', 'save_plan', 'toggle_plan_status'];
+const NO_USER_ID_REQUIRED = ['list_plans', 'save_plan', 'toggle_plan_status'];
 
 function genReference(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -38,6 +38,8 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'list_plans') return await listPlans(req, res);
+    if (action === 'save_plan') return await savePlan(req, res);
+    if (action === 'toggle_plan_status') return await togglePlanStatus(req, res);
     if (action === 'adjust_balance') return await adjustBalance(req, res, userId);
     if (action === 'assign_plan') return await assignPlan(req, res, userId);
     if (action === 'remove_investment') return await removeInvestment(req, res, userId);
@@ -50,9 +52,49 @@ export default async function handler(req, res) {
 }
 
 async function listPlans(req, res) {
-  const { data, error } = await supabase.from('investment_plans').select('id, name, min_amount').order('min_amount', { ascending: true });
+  const { data, error } = await supabase.from('investment_plans').select('id, name, min_investment, daily_profit, duration_days, total_return, purchase_limit, status').order('min_investment', { ascending: true });
   if (error) throw error;
   return res.status(200).json({ ok: true, plans: data || [] });
+}
+
+async function savePlan(req, res) {
+  const { id, name, minInvestment, dailyProfit, durationDays, purchaseLimit } = req.body;
+
+  if (!name) return res.status(400).json({ error: 'Plan name is required.' });
+  const min = Number(minInvestment), daily = Number(dailyProfit), duration = Number(durationDays), limit = Number(purchaseLimit);
+  if (!min || min <= 0) return res.status(400).json({ error: 'Please provide a valid minimum investment.' });
+  if (!daily || daily <= 0) return res.status(400).json({ error: 'Please provide a valid daily profit.' });
+  if (!duration || duration <= 0) return res.status(400).json({ error: 'Please provide a valid duration in days.' });
+  if (!limit || limit <= 0) return res.status(400).json({ error: 'Please provide a valid purchase limit.' });
+
+  const payload = {
+    name,
+    min_investment: min,
+    daily_profit: daily,
+    duration_days: duration,
+    total_return: daily * duration,
+    purchase_limit: limit,
+  };
+
+  if (id) {
+    const { data, error } = await supabase.from('investment_plans').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return res.status(200).json({ ok: true, plan: data });
+  } else {
+    const { data, error } = await supabase.from('investment_plans').insert([{ ...payload, status: 'active' }]).select().single();
+    if (error) throw error;
+    return res.status(200).json({ ok: true, plan: data });
+  }
+}
+
+async function togglePlanStatus(req, res) {
+  const { id, currentStatus } = req.body;
+  if (!id) return res.status(400).json({ error: 'id is required.' });
+
+  const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+  const { data, error } = await supabase.from('investment_plans').update({ status: newStatus }).eq('id', id).select().single();
+  if (error) throw error;
+  return res.status(200).json({ ok: true, plan: data });
 }
 async function adjustBalance(req, res, userId) {
   const { direction, amount } = req.body; // direction: 'add' | 'remove'
@@ -107,7 +149,7 @@ async function assignPlan(req, res, userId) {
   const { data: investment, error: invErr } = await supabase.from('investments').insert([{
     user_id: userId,
     plan_name: plan.name,
-    principal_amount: plan.min_amount,
+    principal_amount: plan.min_investment,
     daily_profit: plan.daily_profit,
     status: 'active',
   }]).select().single();
@@ -117,7 +159,7 @@ async function assignPlan(req, res, userId) {
     user_id: userId,
     reference: genReference('PLAN'),
     type: 'investment',
-    amount: Number(plan.min_amount),
+    amount: Number(plan.min_investment),
     direction: 'out',
     status: 'completed',
     description: `${plan.name} plan granted by admin`,
