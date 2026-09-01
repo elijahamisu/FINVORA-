@@ -203,14 +203,33 @@
                 const { data: user, error } = await supabase.from('profiles').select('*').eq('id', currentUserId).single();
                 if (error || !user) { alert("User not found"); window.location.href = 'users.html'; return; }
 
+                // 2. Fetch Wallet — balances live on `wallets`, not `profiles`
+                // (profiles has no wallet_balance/investment_balance/
+                // total_earnings columns at all, which is why these
+                // summaries previously showed ₦0.00 no matter what).
+                const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', currentUserId).single();
+
+                // 3. Fetch total deposited (sum of confirmed deposits)
+                const { data: depositRows } = await supabase.from('deposits').select('amount').eq('user_id', currentUserId).eq('status', 'confirmed');
+                const totalDeposited = (depositRows || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+                // 4. Fetch active investment total (sum of principal on active investments)
+                const { data: activeInvRows } = await supabase.from('investments').select('principal_amount').eq('user_id', currentUserId).eq('status', 'active');
+                const activeInvested = (activeInvRows || []).reduce((sum, i) => sum + Number(i.principal_amount || 0), 0);
+
+                // 5. Total earnings — sum of completed inbound transactions of type 'earning'/'referral'
+                const { data: earningRows } = await supabase.from('transactions').select('amount, type').eq('user_id', currentUserId).eq('direction', 'in').in('type', ['earning', 'referral']);
+                const totalEarnings = (earningRows || []).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
                 renderHeader(user);
-                renderSummaries(user);
+                renderSummaries(wallet, totalDeposited, activeInvested, totalEarnings);
                 renderActions(user);
 
-                // 2. Fetch Lists
+                // 6. Fetch Lists
                 loadInvestments();
                 loadDeposits();
                 loadTransactions();
+                loadPlansIntoSelect();
 
             } catch (err) { console.error(err); }
         }
@@ -225,11 +244,11 @@
             document.getElementById('statusBadge').innerHTML = `<span class="badge badge-${status}">${status}</span>`;
         }
 
-        function renderSummaries(user) {
-            document.getElementById('sumBalance').textContent = formatCurrency(user.wallet_balance || 0);
-            document.getElementById('sumDeposits').textContent = formatCurrency(user.total_deposited || 0);
-            document.getElementById('sumInvested').textContent = formatCurrency(user.investment_balance || 0);
-            document.getElementById('sumEarnings').textContent = formatCurrency(user.total_earnings || 0);
+        function renderSummaries(wallet, totalDeposited, activeInvested, totalEarnings) {
+            document.getElementById('sumBalance').textContent = formatCurrency(wallet?.available_balance || 0);
+            document.getElementById('sumDeposits').textContent = formatCurrency(totalDeposited);
+            document.getElementById('sumInvested').textContent = formatCurrency(activeInvested);
+            document.getElementById('sumEarnings').textContent = formatCurrency(totalEarnings);
         }
 
         async function loadInvestments() {
@@ -240,6 +259,7 @@
                     <div class="list-item">
                         <div class="item-row"><span class="item-main">${inv.plan_name}</span><span style="color:var(--gold-primary); font-weight:700;">${formatCurrency(inv.principal_amount)}</span></div>
                         <div class="item-row"><span class="item-sub">Daily: ${formatCurrency(inv.daily_profit)}</span><span class="item-sub">Started: ${new Date(inv.created_at).toLocaleDateString()}</span></div>
+                        <button class="btn-action" style="margin-top:8px; padding:8px; font-size:0.7rem; background:rgba(255,77,77,0.08); color:var(--error); border:1px solid var(--error);" onclick="removeInvestment('${inv.id}')">REMOVE PLAN</button>
                     </div>
                 `).join('');
             }
@@ -271,6 +291,85 @@
             }
         }
 
+        async function callAdminApi(body) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ userId: currentUserId, ...body })
+            });
+            const result = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(result.error || `Request failed (${res.status})`);
+            return result;
+        }
+
+        async function loadPlansIntoSelect() {
+            const { data } = await supabase.from('investment_plans').select('id, name, min_amount').order('min_amount', { ascending: true });
+            const select = document.getElementById('assignPlanSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">Select a plan...</option>' +
+                (data || []).map(p => `<option value="${p.id}">${p.name} — ${formatCurrency(p.min_amount)}</option>`).join('');
+        }
+
+        window.submitFunds = async (direction) => {
+            const input = document.getElementById('fundsAmount');
+            const amount = parseFloat(input.value);
+            if (!amount || amount <= 0) { alert('Enter a valid amount.'); return; }
+            if (!confirm(`${direction === 'add' ? 'Add' : 'Remove'} ${formatCurrency(amount)} ${direction === 'add' ? 'to' : 'from'} this user's wallet?`)) return;
+
+            try {
+                await callAdminApi({ action: 'adjust_balance', direction, amount });
+                input.value = '';
+                loadUserData();
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+
+        window.submitAssignPlan = async () => {
+            const select = document.getElementById('assignPlanSelect');
+            const planId = select.value;
+            if (!planId) { alert('Select a plan first.'); return; }
+            const planLabel = select.options[select.selectedIndex].text;
+            if (!confirm(`Grant "${planLabel}" to this user for free? This does not deduct their wallet.`)) return;
+
+            try {
+                await callAdminApi({ action: 'assign_plan', planId });
+                loadUserData();
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+
+        window.removeInvestment = async (investmentId) => {
+            if (!confirm('Remove this investment plan from the user? This cannot be undone.')) return;
+            try {
+                await callAdminApi({ action: 'remove_investment', investmentId });
+                loadUserData();
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+
+        window.submitDeleteUser = async () => {
+            const name = document.getElementById('userName').textContent || 'this user';
+            const typed = prompt(`This permanently deletes ${name}'s account, wallet, and full history — it cannot be undone.\n\nType DELETE to confirm.`);
+            if (typed !== 'DELETE') return;
+
+            try {
+                await callAdminApi({ action: 'delete_user' });
+                alert('User deleted.');
+                window.location.href = 'users.html';
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+
         function renderActions(user) {
             const container = document.getElementById('actionContainer');
             const isSuspended = user.status === 'suspended';
@@ -280,15 +379,47 @@
                 <button class="btn-action ${isSuspended ? 'btn-restore' : 'btn-suspend'}" id="statusActionBtn">
                     ${isSuspended ? 'RESTORE ACCOUNT' : 'SUSPEND ACCOUNT'}
                 </button>
+
+                <div style="height:1px; background:rgba(255,255,255,0.06); margin:20px 0;"></div>
+
+                <p style="font-size: 0.65rem; color: var(--text-gray); text-transform:uppercase; letter-spacing:1px; margin-bottom: 10px;">Adjust Wallet</p>
+                <input type="number" id="fundsAmount" placeholder="Amount (₦)" min="1" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--glass-border); background:var(--bg-dark); color:#fff; margin-bottom:10px; font-size:0.85rem;">
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <button class="btn-action btn-restore" style="margin:0;" onclick="submitFunds('add')">ADD FUNDS</button>
+                    <button class="btn-action btn-suspend" style="margin:0;" onclick="submitFunds('remove')">REMOVE FUNDS</button>
+                </div>
+
+                <div style="height:1px; background:rgba(255,255,255,0.06); margin:20px 0;"></div>
+
+                <p style="font-size: 0.65rem; color: var(--text-gray); text-transform:uppercase; letter-spacing:1px; margin-bottom: 10px;">Assign Plan</p>
+                <select id="assignPlanSelect" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--glass-border); background:var(--bg-dark); color:#fff; margin-bottom:8px; font-size:0.85rem;">
+                    <option value="">Select a plan...</option>
+                </select>
+                <p style="font-size:0.65rem; color:var(--text-gray); margin-bottom:10px;">Granted free — does not deduct the user's wallet.</p>
+                <button class="btn-action" style="background:rgba(212,175,55,0.1); color:var(--gold-primary); border:1px solid var(--gold-primary);" onclick="submitAssignPlan()">ASSIGN PLAN</button>
+
+                <div style="height:1px; background:rgba(255,255,255,0.06); margin:20px 0;"></div>
+
+                <p style="font-size: 0.65rem; color: var(--error); text-transform:uppercase; letter-spacing:1px; margin-bottom: 10px;">Danger Zone</p>
+                <button class="btn-action btn-suspend" onclick="submitDeleteUser()">DELETE USER PERMANENTLY</button>
             `;
+
+            loadPlansIntoSelect();
 
             document.getElementById('statusActionBtn').onclick = async () => {
                 const newStatus = isSuspended ? 'active' : 'suspended';
                 if (!confirm(`Are you sure you want to set this account to ${newStatus}?`)) return;
-                
-                const { error } = await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id);
-                if (error) alert("Error updating status");
-                else loadUserData();
+
+                try {
+                    // Routed through the admin API (service-role key) rather
+                    // than writing directly with the anon key — an admin
+                    // updating another user's profile row can get silently
+                    // blocked by RLS otherwise (0 rows affected, no error).
+                    await callAdminApi({ action: 'set_status', status: newStatus });
+                    loadUserData();
+                } catch (err) {
+                    alert(err.message);
+                }
             };
         }
 
