@@ -25,6 +25,19 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-dark); color: var(--text-white); min-height: 100vh; overflow-x: hidden; }
 
+        /* Telegram Popup Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-navy); border: 1px solid var(--gold-primary); width: 100%; max-width: 420px; border-radius: 16px; padding: 25px; text-align: center; }
+        .modal-title { font-family: 'Playfair Display', serif; color: var(--gold-primary); margin-bottom: 12px; font-size: 1.3rem; }
+        .tg-desc { color: var(--text-gray); font-size: 0.85rem; margin-bottom: 22px; line-height: 1.4; }
+        .tg-link-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; text-decoration: none; }
+        .tg-link-row:hover { border-color: var(--gold-primary); }
+        .tg-link-label { text-align: left; }
+        .tg-link-label strong { display: block; color: var(--text-white); font-size: 0.9rem; }
+        .tg-link-label span { color: var(--text-gray); font-size: 0.75rem; }
+        .tg-link-arrow { color: var(--gold-primary); font-size: 1.1rem; }
+        #telegramModalClose { margin-top: 10px; background: transparent; border: none; color: var(--text-gray); font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
+
         /* Layout Structure */
         .layout { display: flex; min-height: 100vh; }
 
@@ -265,6 +278,29 @@
                 </div>
             </section>
         </main>
+
+        <!-- Telegram Popup Modal -->
+        <div class="modal" id="telegramModal">
+            <div class="modal-content">
+                <h2 class="modal-title">Join Our Community</h2>
+                <p class="tg-desc">Stay updated with the latest news, plan updates, and connect with other investors by joining our official Telegram channel and group.</p>
+                <a href="https://t.me/finvora_channel" target="_blank" rel="noopener" class="tg-link-row">
+                    <div class="tg-link-label">
+                        <strong>Telegram Channel</strong>
+                        <span>Official announcements &amp; updates</span>
+                    </div>
+                    <span class="tg-link-arrow">→</span>
+                </a>
+                <a href="https://t.me/finvora_group" target="_blank" rel="noopener" class="tg-link-row">
+                    <div class="tg-link-label">
+                        <strong>Telegram Group</strong>
+                        <span>Chat with the community</span>
+                    </div>
+                    <span class="tg-link-arrow">→</span>
+                </a>
+                <button id="telegramModalClose">Maybe later</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -280,6 +316,18 @@
 
         let isBalanceVisible = true;
         let userData = { total_balance: 0, available_balance: 0, investment_balance: 0, total_earnings: 0 };
+
+        // Telegram join popup — shown once per login session (not on
+        // every dashboard refresh) after a successful login/registration.
+        function maybeShowTelegramModal() {
+            if (sessionStorage.getItem('telegramModalShown')) return;
+            const modal = document.getElementById('telegramModal');
+            modal.style.display = 'flex';
+            sessionStorage.setItem('telegramModalShown', '1');
+        }
+        document.getElementById('telegramModalClose').addEventListener('click', () => {
+            document.getElementById('telegramModal').style.display = 'none';
+        });
 
         // 1. Protection & Data Fetching
         async function initDashboard() {
@@ -386,6 +434,8 @@
                     </tr>`;
                 }).join('');
             }
+
+            maybeShowTelegramModal();
         }
 
         function updateUIBalances() {
