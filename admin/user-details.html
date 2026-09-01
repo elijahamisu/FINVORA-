@@ -213,9 +213,14 @@
                 const { data: depositRows } = await supabase.from('deposits').select('amount').eq('user_id', currentUserId).eq('status', 'confirmed');
                 const totalDeposited = (depositRows || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
 
-                // 4. Fetch active investment total (sum of principal on active investments)
-                const { data: activeInvRows } = await supabase.from('investments').select('principal_amount').eq('user_id', currentUserId).eq('status', 'active');
-                const activeInvested = (activeInvRows || []).reduce((sum, i) => sum + Number(i.principal_amount || 0), 0);
+                // 4. Fetch active investment total (sum of amount on active investments)
+                let activeInvested = 0;
+                try {
+                    const invResult = await callAdminApi({ action: 'list_user_investments' });
+                    activeInvested = (invResult.investments || []).reduce((sum, i) => sum + Number(i.amount || 0), 0);
+                } catch (err) {
+                    console.error('Could not load investments for summary:', err.message);
+                }
 
                 // 5. Total earnings — sum of completed inbound transactions of type 'earning'/'referral'
                 const { data: earningRows } = await supabase.from('transactions').select('amount, type').eq('user_id', currentUserId).eq('direction', 'in').in('type', ['earning', 'referral']);
@@ -252,16 +257,22 @@
         }
 
         async function loadInvestments() {
-            const { data } = await supabase.from('investments').select('*').eq('user_id', currentUserId).eq('status', 'active').limit(3);
             const container = document.getElementById('investmentsList');
-            if (data && data.length > 0) {
-                container.innerHTML = data.map(inv => `
-                    <div class="list-item">
-                        <div class="item-row"><span class="item-main">${inv.plan_name}</span><span style="color:var(--gold-primary); font-weight:700;">${formatCurrency(inv.principal_amount)}</span></div>
-                        <div class="item-row"><span class="item-sub">Daily: ${formatCurrency(inv.daily_profit)}</span><span class="item-sub">Started: ${new Date(inv.created_at).toLocaleDateString()}</span></div>
-                        <button class="btn-action" style="margin-top:8px; padding:8px; font-size:0.7rem; background:rgba(255,77,77,0.08); color:var(--error); border:1px solid var(--error);" onclick="removeInvestment('${inv.id}')">REMOVE PLAN</button>
-                    </div>
-                `).join('');
+            try {
+                const result = await callAdminApi({ action: 'list_user_investments' });
+                const data = result.investments || [];
+                if (data.length > 0) {
+                    container.innerHTML = data.map(inv => `
+                        <div class="list-item">
+                            <div class="item-row"><span class="item-main">${inv.plan_snapshot?.name || 'Unknown Plan'}</span><span style="color:var(--gold-primary); font-weight:700;">${formatCurrency(inv.amount)}</span></div>
+                            <div class="item-row"><span class="item-sub">Daily: ${formatCurrency(inv.daily_profit)}</span><span class="item-sub">Started: ${new Date(inv.started_at || inv.created_at).toLocaleDateString()}</span></div>
+                            <button class="btn-action" style="margin-top:8px; padding:8px; font-size:0.7rem; background:rgba(255,77,77,0.08); color:var(--error); border:1px solid var(--error);" onclick="removeInvestment('${inv.id}')">REMOVE PLAN</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Could not load investments:', err.message);
+                container.innerHTML = `<p style="text-align: center; color: var(--error); font-size: 0.8rem; padding: 20px;">${err.message}</p>`;
             }
         }
 
