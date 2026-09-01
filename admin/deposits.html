@@ -246,7 +246,31 @@
             document.getElementById('statConfirmed').textContent = confirmed || 0;
             document.getElementById('statRejected').textContent = cancelled || 0;
 
-            // Financial sums would be calculated server-side/RPC for precision and Hobby efficiency
+            // Total + Today amounts
+            const { data: confirmedRows, error: confirmedErr } = await supabase.from('deposits').select('amount, confirmed_at').eq('status', 'confirmed');
+
+            if (confirmedErr) {
+                // TEMP DEBUG: show the raw Supabase error on-screen so we
+                // can see exactly what's failing on mobile without devtools.
+                document.getElementById('statTotalAmt').textContent = 'ERR';
+                document.getElementById('statTodayAmt').textContent = 'ERR';
+                const dbg = document.createElement('div');
+                dbg.style.cssText = 'background:#3a0000;color:#ffb3b3;padding:10px;margin:10px 0;border-radius:8px;font-size:0.7rem;word-break:break-all;';
+                dbg.textContent = 'DEPOSITS QUERY ERROR: ' + JSON.stringify(confirmedErr);
+                document.querySelector('.container').prepend(dbg);
+                console.error('confirmedRows error:', confirmedErr);
+                return;
+            }
+
+            const totalAmt = (confirmedRows || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+            const todayStr = new Date().toDateString();
+            const todayAmt = (confirmedRows || [])
+                .filter(d => d.confirmed_at && new Date(d.confirmed_at).toDateString() === todayStr)
+                .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+            document.getElementById('statTotalAmt').textContent = formatCurrency(totalAmt);
+            document.getElementById('statTodayAmt').textContent = formatCurrency(todayAmt);
         }
 
         async function loadDeposits() {
