@@ -217,6 +217,8 @@
         const mobileList = document.getElementById('mobileList');
         const desktopBody = document.getElementById('desktopBody');
         const planModal = document.getElementById('planModal');
+        let plansCache = [];
+        let editingPlanId = null;
 
         async function init() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -228,15 +230,39 @@
             loadPlans();
         }
 
+        async function callAdminApi(body) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify(body)
+            });
+            const result = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(result.error || `Request failed (${res.status})`);
+            return result;
+        }
+
+        // Reads go through the API (service-role key) rather than the anon
+        // key directly — this table has no working SELECT policy for
+        // authenticated users, so a direct read here errors out.
         async function loadPlans() {
-            const { data: plans, error } = await supabase.from('investment_plans').select('*').order('min_amount', { ascending: true });
-            
-            if (plans) {
+            try {
+                const result = await callAdminApi({ action: 'list_plans' });
+                const plans = result.plans || [];
+                plansCache = plans;
+
                 renderData(plans);
                 document.getElementById('totalPlans').textContent = plans.length;
-                document.getElementById('activePlans').textContent = plans.filter(p => p.active).length;
-                document.getElementById('inactivePlans').textContent = plans.filter(p => !p.active).length;
+                document.getElementById('activePlans').textContent = plans.filter(p => p.status === 'active').length;
+                document.getElementById('inactivePlans').textContent = plans.filter(p => p.status !== 'active').length;
                 document.getElementById('emptyState').style.display = plans.length === 0 ? 'block' : 'none';
+            } catch (err) {
+                alert('Could not load plans: ' + err.message);
             }
         }
 
@@ -245,9 +271,10 @@
             desktopBody.innerHTML = '';
 
             plans.forEach(plan => {
-                const statusClass = plan.active ? 'status-active' : 'status-inactive';
-                const statusText = plan.active ? 'Active' : 'Inactive';
-                const totalReturn = plan.daily_profit * plan.duration;
+                const isActive = plan.status === 'active';
+                const statusClass = isActive ? 'status-active' : 'status-inactive';
+                const statusText = isActive ? 'Active' : 'Inactive';
+                const totalReturn = plan.total_return ?? (plan.daily_profit * plan.duration_days);
 
                 // Mobile
                 const card = document.createElement('div');
@@ -256,15 +283,15 @@
                     <span class="plan-name">${plan.name}</span>
                     <span class="status-badge ${statusClass}">${statusText}</span>
                     <div class="plan-grid">
-                        <div class="grid-item"><span>Min. Invest</span><b>${formatCurrency(plan.min_amount)}</b></div>
+                        <div class="grid-item"><span>Min. Invest</span><b>${formatCurrency(plan.min_investment)}</b></div>
                         <div class="grid-item"><span>Daily Profit</span><b>${formatCurrency(plan.daily_profit)}</b></div>
-                        <div class="grid-item"><span>Duration</span><b>${plan.duration} Days</b></div>
+                        <div class="grid-item"><span>Duration</span><b>${plan.duration_days} Days</b></div>
                         <div class="grid-item"><span>Total Return</span><b>${formatCurrency(totalReturn)}</b></div>
                     </div>
                     <div class="card-actions">
-                        <button class="btn-card btn-edit">EDIT</button>
-                        <button class="btn-card btn-status" onclick="window.togglePlan('${plan.id}', ${plan.active})">
-                            ${plan.active ? 'DEACTIVATE' : 'ACTIVATE'}
+                        <button class="btn-card btn-edit" onclick="window.openEditPlan('${plan.id}')">EDIT</button>
+                        <button class="btn-card btn-status" onclick="window.togglePlan('${plan.id}', '${plan.status}')">
+                            ${isActive ? 'DEACTIVATE' : 'ACTIVATE'}
                         </button>
                     </div>
                 `;
@@ -274,14 +301,15 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><b>${plan.name}</b></td>
-                    <td>${formatCurrency(plan.min_amount)}</td>
+                    <td>${formatCurrency(plan.min_investment)}</td>
                     <td>${formatCurrency(plan.daily_profit)}</td>
                     <td><b>${formatCurrency(totalReturn)}</b></td>
-                    <td>${plan.duration} Days</td>
+                    <td>${plan.duration_days} Days</td>
                     <td><span class="status-badge ${statusClass}" style="position:static;">${statusText}</span></td>
-                    <td>
-                        <button class="btn-status" style="padding:4px 8px; font-size:0.7rem; border-radius:4px;" onclick="window.togglePlan('${plan.id}', ${plan.active})">
-                            ${plan.active ? 'Disable' : 'Enable'}
+                    <td style="display:flex; gap:6px;">
+                        <button class="btn-status" style="padding:4px 8px; font-size:0.7rem; border-radius:4px;" onclick="window.openEditPlan('${plan.id}')">Edit</button>
+                        <button class="btn-status" style="padding:4px 8px; font-size:0.7rem; border-radius:4px;" onclick="window.togglePlan('${plan.id}', '${plan.status}')">
+                            ${isActive ? 'Disable' : 'Enable'}
                         </button>
                     </td>
                 `;
@@ -290,16 +318,63 @@
         }
 
         window.togglePlan = async (id, currentStatus) => {
-            if (!confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this plan?`)) return;
-            const { error } = await supabase.from('investment_plans').update({ active: !currentStatus }).eq('id', id);
-            if (!error) loadPlans();
+            const willBeActive = currentStatus !== 'active';
+            if (!confirm(`Are you sure you want to ${willBeActive ? 'activate' : 'deactivate'} this plan?`)) return;
+            try {
+                await callAdminApi({ action: 'toggle_plan_status', id, currentStatus });
+                loadPlans();
+            } catch (err) {
+                alert('Could not update plan status: ' + err.message);
+            }
         };
+
+        window.openEditPlan = (id) => {
+            const plan = plansCache.find(p => p.id === id);
+            if (!plan) return;
+            editingPlanId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Plan';
+            document.getElementById('pName').value = plan.name;
+            document.getElementById('pMin').value = plan.min_investment;
+            document.getElementById('pDaily').value = plan.daily_profit;
+            document.getElementById('pDuration').value = plan.duration_days;
+            document.getElementById('pLimit').value = plan.purchase_limit;
+            planModal.style.display = 'flex';
+        };
+
+        function openAddPlan() {
+            editingPlanId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Plan';
+            document.getElementById('planForm').reset();
+            document.getElementById('pLimit').value = 1;
+            planModal.style.display = 'flex';
+        }
+
+        document.getElementById('planForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('pName').value.trim();
+            const minInvestment = document.getElementById('pMin').value;
+            const dailyProfit = document.getElementById('pDaily').value;
+            const durationDays = document.getElementById('pDuration').value;
+            const purchaseLimit = document.getElementById('pLimit').value;
+
+            try {
+                await callAdminApi({
+                    action: 'save_plan',
+                    id: editingPlanId || undefined,
+                    name, minInvestment, dailyProfit, durationDays, purchaseLimit
+                });
+                planModal.style.display = 'none';
+                loadPlans();
+            } catch (err) {
+                alert('Could not save plan: ' + err.message);
+            }
+        });
 
         // UI Handlers
         menuToggle.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
         overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
         document.getElementById('logoutBtn').onclick = async () => { await supabase.auth.signOut(); window.location.href = 'login.html'; };
-        document.getElementById('addPlanBtn').onclick = () => { planModal.style.display = 'flex'; };
+        document.getElementById('addPlanBtn').onclick = openAddPlan;
         document.getElementById('closeModal').onclick = () => { planModal.style.display = 'none'; };
 
         init();
