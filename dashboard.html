@@ -213,6 +213,23 @@
                 </div>
             </section>
 
+            <!-- Recent Transactions -->
+            <section class="card" style="margin-top: 25px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 class="text-gold">Recent Transactions</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th></tr>
+                        </thead>
+                        <tbody id="recentTxBody">
+                            <tr><td colspan="4" style="text-align:center; color: var(--text-gray);">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <!-- Promo Grid -->
             <section class="promo-grid">
                 <div class="card">
@@ -316,6 +333,59 @@
                 .eq('status', 'active');
 
             document.getElementById('activePlans').textContent = activePlansCount || 0;
+
+            // Today's Earnings + Referral Earnings — these were declared
+            // in the markup but no query ever populated them; they were
+            // stuck at the hardcoded ₦0.00 in the HTML.
+            const { data: earningTx, error: earningTxError } = await supabase
+                .from('transactions')
+                .select('amount, type, created_at')
+                .eq('user_id', session.user.id)
+                .in('type', ['earning', 'referral'])
+                .eq('status', 'completed');
+
+            if (earningTxError) {
+                console.error('Earnings tx load error:', earningTxError.message);
+            } else {
+                const todayStr = new Date().toDateString();
+                const todayEarnings = (earningTx || [])
+                    .filter(t => t.type === 'earning' && new Date(t.created_at).toDateString() === todayStr)
+                    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+                const referralEarnings = (earningTx || [])
+                    .filter(t => t.type === 'referral')
+                    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+                document.getElementById('todayEarn').textContent = formatCurrency(todayEarnings);
+                document.getElementById('refEarn').textContent = formatCurrency(referralEarnings);
+            }
+
+            // Recent Transactions
+            const { data: recentTx, error: recentTxError } = await supabase
+                .from('transactions')
+                .select('type, description, amount, direction, created_at')
+                .eq('user_id', session.user.id)
+                .order('created_at', { ascending: false })
+                .limit(8);
+
+            const txBody = document.getElementById('recentTxBody');
+            if (recentTxError) {
+                txBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-gray);">Couldn't load transactions</td></tr>`;
+                console.error('Recent tx load error:', recentTxError.message);
+            } else if (!recentTx || recentTx.length === 0) {
+                txBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-gray);">No transactions yet</td></tr>`;
+            } else {
+                txBody.innerHTML = recentTx.map(tx => {
+                    const sign = tx.direction === 'in' ? '+' : '−';
+                    const color = tx.direction === 'in' ? '#2ecc71' : '#e74c3c';
+                    const dateStr = new Date(tx.created_at).toLocaleDateString('en-NG', { day: '2-digit', month: 'short' });
+                    return `<tr>
+                        <td style="text-transform:capitalize;">${tx.type}</td>
+                        <td>${tx.description || ''}</td>
+                        <td style="color:${color};">${sign}${formatCurrency(Number(tx.amount || 0))}</td>
+                        <td>${dateStr}</td>
+                    </tr>`;
+                }).join('');
+            }
         }
 
         function updateUIBalances() {
