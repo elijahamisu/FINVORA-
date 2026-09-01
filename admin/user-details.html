@@ -325,7 +325,7 @@
                     plans.map(p => `<option value="${p.id}">${p.name} — ${formatCurrency(p.min_amount)}</option>`).join('');
             } catch (err) {
                 console.error('Could not load investment plans:', err.message);
-                select.innerHTML = `<option value="">Error loading plans — check console</option>`;
+                select.innerHTML = `<option value="">${err.message}</option>`;
             }
         }
 
