@@ -9,7 +9,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ACTIONS = ['adjust_balance', 'assign_plan', 'remove_investment', 'delete_user', 'set_status'];
+const ACTIONS = ['adjust_balance', 'assign_plan', 'remove_investment', 'delete_user', 'set_status', 'list_plans'];
+const NO_USER_ID_REQUIRED = ['list_plans'];
 
 function genReference(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -31,11 +32,12 @@ export default async function handler(req, res) {
   }
 
   const { action, userId } = req.body || {};
-  if (!userId || !ACTIONS.includes(action)) {
+  if (!ACTIONS.includes(action) || (!userId && !NO_USER_ID_REQUIRED.includes(action))) {
     return res.status(400).json({ error: `Body must include userId and action: ${ACTIONS.join(' | ')}` });
   }
 
   try {
+    if (action === 'list_plans') return await listPlans(req, res);
     if (action === 'adjust_balance') return await adjustBalance(req, res, userId);
     if (action === 'assign_plan') return await assignPlan(req, res, userId);
     if (action === 'remove_investment') return await removeInvestment(req, res, userId);
@@ -47,6 +49,11 @@ export default async function handler(req, res) {
   }
 }
 
+async function listPlans(req, res) {
+  const { data, error } = await supabase.from('investment_plans').select('id, name, min_amount').order('min_amount', { ascending: true });
+  if (error) throw error;
+  return res.status(200).json({ ok: true, plans: data || [] });
+}
 async function adjustBalance(req, res, userId) {
   const { direction, amount } = req.body; // direction: 'add' | 'remove'
   const amt = Number(amount);
