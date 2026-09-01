@@ -309,11 +309,23 @@
         }
 
         async function loadPlansIntoSelect() {
-            const { data } = await supabase.from('investment_plans').select('id, name, min_amount').order('min_amount', { ascending: true });
             const select = document.getElementById('assignPlanSelect');
             if (!select) return;
+
+            const { data, error } = await supabase.from('investment_plans').select('id, name, min_amount').order('min_amount', { ascending: true });
+
+            if (error) {
+                console.error('Could not load investment plans:', error.message);
+                select.innerHTML = `<option value="">Error loading plans — check console</option>`;
+                return;
+            }
+            if (!data || data.length === 0) {
+                select.innerHTML = `<option value="">No plans found — create one in Plans first</option>`;
+                return;
+            }
+
             select.innerHTML = '<option value="">Select a plan...</option>' +
-                (data || []).map(p => `<option value="${p.id}">${p.name} — ${formatCurrency(p.min_amount)}</option>`).join('');
+                data.map(p => `<option value="${p.id}">${p.name} — ${formatCurrency(p.min_amount)}</option>`).join('');
         }
 
         window.submitFunds = async (direction) => {
