@@ -251,6 +251,26 @@
             document.getElementById('statApproved').textContent = approved || 0;
             document.getElementById('statCompleted').textContent = completed || 0;
             document.getElementById('statRejected').textContent = rejected || 0;
+
+            const { data: paidRows, error: paidErr } = await supabase.from('withdrawals').select('amount').in('status', ['approved', 'completed']);
+
+            if (paidErr) {
+                // TEMP DEBUG: surface the raw error on-screen (mobile has no devtools)
+                document.getElementById('statTotalAmt').textContent = 'ERR';
+                const dbg = document.createElement('div');
+                dbg.style.cssText = 'background:#3a0000;color:#ffb3b3;padding:10px;margin:10px 0;border-radius:8px;font-size:0.7rem;word-break:break-all;';
+                dbg.textContent = 'WITHDRAWALS QUERY ERROR: ' + JSON.stringify(paidErr);
+                document.querySelector('.container').prepend(dbg);
+                console.error('paidRows error:', paidErr);
+                return;
+            }
+
+            const totalVolume = (paidRows || []).reduce((sum, w) => sum + Number(w.amount || 0), 0);
+            document.getElementById('statTotalAmt').textContent = formatCurrency(totalVolume);
+        }
+
+        function genReference(prefix) {
+            return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
         }
 
         async function loadWithdrawals() {
@@ -366,6 +386,29 @@
                     .update({ status: newStatus, processed_at: new Date().toISOString() })
                     .eq('id', withdrawal.id);
                 if (error) throw error;
+
+                // Approving is the terminal "funds paid out" event (there's
+                // no separate payout-confirmation step), so this is where
+                // the money actually leaves — log it to the transactions
+                // ledger and update the wallet's running total, same as
+                // the deposit confirm flow does. Neither was happening
+                // before, which is why Total Withdrawn always showed
+                // ₦0.00 everywhere it's displayed.
+                if (newStatus === 'approved') {
+                    await supabase.from('transactions').insert([{
+                        user_id: withdrawal.user_id,
+                        reference: genReference('WTH'),
+                        type: 'withdrawal',
+                        amount: Number(withdrawal.amount),
+                        direction: 'out',
+                        status: 'completed',
+                        description: 'Withdrawal approved by admin'
+                    }]);
+
+                    const { data: wWallet } = await supabase.from('wallets').select('total_withdrawn').eq('user_id', withdrawal.user_id).single();
+                    const newTotalWithdrawn = Number(wWallet?.total_withdrawn || 0) + Number(withdrawal.amount);
+                    await supabase.from('wallets').update({ total_withdrawn: newTotalWithdrawn }).eq('user_id', withdrawal.user_id);
+                }
 
                 document.getElementById('detailsModal').style.display = 'none';
                 loadStats();
