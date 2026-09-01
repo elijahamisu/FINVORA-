@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ACTIONS = ['adjust_balance', 'assign_plan', 'remove_investment', 'delete_user', 'set_status', 'list_plans', 'save_plan', 'toggle_plan_status'];
+const ACTIONS = ['adjust_balance', 'assign_plan', 'remove_investment', 'delete_user', 'set_status', 'list_plans', 'save_plan', 'toggle_plan_status', 'list_user_investments'];
 const NO_USER_ID_REQUIRED = ['list_plans', 'save_plan', 'toggle_plan_status'];
 
 function genReference(prefix) {
@@ -40,6 +40,7 @@ export default async function handler(req, res) {
     if (action === 'list_plans') return await listPlans(req, res);
     if (action === 'save_plan') return await savePlan(req, res);
     if (action === 'toggle_plan_status') return await togglePlanStatus(req, res);
+    if (action === 'list_user_investments') return await listUserInvestments(req, res, userId);
     if (action === 'adjust_balance') return await adjustBalance(req, res, userId);
     if (action === 'assign_plan') return await assignPlan(req, res, userId);
     if (action === 'remove_investment') return await removeInvestment(req, res, userId);
@@ -143,15 +144,24 @@ async function assignPlan(req, res, userId) {
   const { data: plan, error: planErr } = await supabase.from('investment_plans').select('*').eq('id', planId).single();
   if (planErr || !plan) return res.status(404).json({ error: 'Plan not found' });
 
+  const startedAt = new Date();
+  const maturesAt = new Date(startedAt.getTime() + Number(plan.duration_days) * 24 * 60 * 60 * 1000);
+
   // Admin-granted plans do NOT debit the client's wallet — this is a manual
   // enrollment (bonus/compensation/promo), not a purchase. Use "Remove
   // Funds" separately if a debit is also intended.
   const { data: investment, error: invErr } = await supabase.from('investments').insert([{
     user_id: userId,
-    plan_name: plan.name,
-    principal_amount: plan.min_investment,
+    plan_id: plan.id,
+    plan_snapshot: { name: plan.name, min_investment: plan.min_investment, daily_profit: plan.daily_profit, duration_days: plan.duration_days, total_return: plan.total_return },
+    amount: plan.min_investment,
     daily_profit: plan.daily_profit,
+    earned_amount: 0,
+    duration_days: plan.duration_days,
+    days_elapsed: 0,
     status: 'active',
+    started_at: startedAt.toISOString(),
+    matures_at: maturesAt.toISOString(),
   }]).select().single();
   if (invErr) throw invErr;
 
@@ -203,6 +213,12 @@ async function setStatus(req, res, userId) {
   if (error) throw error;
 
   return res.status(200).json({ ok: true, status });
+}
+
+async function listUserInvestments(req, res, userId) {
+  const { data, error } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active').order('created_at', { ascending: false }).limit(5);
+  if (error) throw error;
+  return res.status(200).json({ ok: true, investments: data || [] });
 }
 
 async function deleteUser(req, res, userId) {
