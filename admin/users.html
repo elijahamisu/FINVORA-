@@ -245,25 +245,58 @@
 
             if (sort === 'newest') query = query.order('created_at', { ascending: false });
             else if (sort === 'oldest') query = query.order('created_at', { ascending: true });
-            else if (sort === 'balance') query = query.order('wallet_balance', { ascending: false });
+            // 'balance' sort is handled after the fetch below — profiles has
+            // no wallet_balance column (balances live on `wallets`), so it
+            // can't be ordered server-side without a join/view.
 
-            const { data, count, error } = await query.range(currentPage * perPage, (currentPage + 1) * perPage - 1);
+            let data, count, error;
+            if (sort === 'balance') {
+                // No per-page ordering possible without a DB view, so pull a
+                // capped working set, sort by joined wallet balance, then
+                // paginate client-side. Fine for admin-panel scale; revisit
+                // with a real view/RPC if the user base grows past this cap.
+                const CAP = 500;
+                ({ data, count, error } = await query.range(0, CAP - 1));
+                if (data) {
+                    const ids = data.map(u => u.id);
+                    const { data: wallets } = await supabase.from('wallets').select('user_id, available_balance').in('user_id', ids);
+                    const balanceMap = new Map((wallets || []).map(w => [w.user_id, Number(w.available_balance || 0)]));
+                    data.forEach(u => { u._balance = balanceMap.get(u.id) || 0; });
+                    data.sort((a, b) => b._balance - a._balance);
+                    count = data.length;
+                    data = data.slice(currentPage * perPage, (currentPage + 1) * perPage);
+                }
+            } else {
+                ({ data, count, error } = await query.range(currentPage * perPage, (currentPage + 1) * perPage - 1));
+            }
 
             if (data) {
-                renderData(data);
+                await renderData(data);
                 updatePagination(count);
             }
         }
 
-        function renderData(users) {
+        async function renderData(users) {
             mobileList.innerHTML = '';
             desktopBody.innerHTML = '';
             document.getElementById('emptyState').style.display = users.length === 0 ? 'block' : 'none';
 
+            // Balances live on `wallets`, not `profiles` (profiles has no
+            // wallet_balance column at all) — fetch them in one batch for
+            // this page instead of per-row.
+            const missingBalances = users.some(u => u._balance === undefined);
+            let balanceMap = new Map();
+            if (missingBalances) {
+                const ids = users.map(u => u.id);
+                const { data: wallets } = await supabase.from('wallets').select('user_id, available_balance').in('user_id', ids);
+                balanceMap = new Map((wallets || []).map(w => [w.user_id, Number(w.available_balance || 0)]));
+            }
+
             users.forEach(user => {
                 const statusBadge = `<span class="badge badge-${user.status || 'active'}">${user.status || 'active'}</span>`;
                 const dateJoined = new Date(user.created_at).toLocaleDateString();
-                const balance = formatCurrency(user.wallet_balance || 0);
+                const balanceValue = user._balance !== undefined ? user._balance : (balanceMap.get(user.id) || 0);
+                const balance = formatCurrency(balanceValue);
 
                 // Mobile Card
                 const card = document.createElement('div');
