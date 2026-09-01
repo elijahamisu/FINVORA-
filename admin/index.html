@@ -222,6 +222,23 @@
                 document.getElementById('statUsers').textContent = userCount || 0;
                 document.getElementById('statActiveInv').textContent = activeInv || 0;
 
+                // Total Deposits / Withdrawals — these were never actually
+                // computed before (stat cards were hardcoded ₦0.00).
+                // Deposits: the `transactions` ledger records confirmed
+                // deposits as type='deposit', status='completed' (verified
+                // against live data).
+                const { data: depositTx } = await supabase.from('transactions').select('amount').eq('type', 'deposit').eq('status', 'completed');
+                const totalDeposits = (depositTx || []).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+                // Withdrawals: there is no 'withdrawal' type in `transactions`,
+                // so use the `withdrawals` table directly — same statuses
+                // counted as paid-out in admin/withdrawals.html.
+                const { data: withdrawalRows } = await supabase.from('withdrawals').select('amount').in('status', ['approved', 'completed']);
+                const totalWithdrawals = (withdrawalRows || []).reduce((sum, w) => sum + Number(w.amount || 0), 0);
+
+                document.getElementById('statDeposits').textContent = formatCurrency(totalDeposits);
+                document.getElementById('statWithdrawals').textContent = formatCurrency(totalWithdrawals);
+
                 // Fetch Pending
                 const { count: pendingDep } = await supabase.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'pending');
                 const { count: pendingWith } = await supabase.from('withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending');
