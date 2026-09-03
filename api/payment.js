@@ -19,7 +19,24 @@ export default async function handler(req, res) {
   try {
     if (action === 'withdraw') {
       const MIN_WITHDRAWAL = 650;
-      const FEE_PERCENT = 0.10;
+
+      // Pull the live fee percentage and lock flag from admin_settings
+      // instead of a hardcoded value, so admin changes take effect
+      // immediately without a code deploy.
+      const { data: settingsRows, error: settingsErr } = await supabase
+        .from('admin_settings')
+        .select('key, value')
+        .in('key', ['withdrawal_fee', 'withdrawals_locked']);
+      if (settingsErr) throw new Error('Could not load platform settings: ' + settingsErr.message);
+
+      const settings = Object.fromEntries((settingsRows || []).map(r => [r.key, r.value]));
+      const isLocked = settings.withdrawals_locked === true || settings.withdrawals_locked === 'true';
+      if (isLocked) {
+        throw new Error('Withdrawals are temporarily disabled by the administrator. Please try again later.');
+      }
+
+      const feePercentValue = Number(settings.withdrawal_fee);
+      const FEE_PERCENT = (isFinite(feePercentValue) ? feePercentValue : 12) / 100;
 
       if (amount < MIN_WITHDRAWAL) throw new Error(`Minimum withdrawal is ₦${MIN_WITHDRAWAL}`);
 
