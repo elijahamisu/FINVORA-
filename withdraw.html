@@ -125,6 +125,10 @@
                         <div class="card">
                             <h3 style="margin-bottom: 20px; font-family: 'Playfair Display';">Request Withdrawal</h3>
 
+                            <div id="withdrawalsLockedBanner" style="display: none; background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.25); border-radius: 10px; padding: 14px; font-size: 0.8rem; color: #ff6b6b; margin-bottom: 18px; line-height: 1.5;">
+                                ⚠ Withdrawals are temporarily disabled by the administrator. Please check back later.
+                            </div>
+
                             <div id="noActiveInvestmentBanner" style="display: none; background: rgba(255,171,0,0.08); border: 1px solid rgba(255,171,0,0.2); border-radius: 10px; padding: 14px; font-size: 0.8rem; color: #ffab00; margin-bottom: 18px; line-height: 1.5;">
                                 ⚠ You need at least one active investment before you can withdraw. <a href="investment.html" style="color: #ffab00; font-weight: 700;">View investment plans →</a>
                             </div>
@@ -139,7 +143,7 @@
                             </div>
 
                             <div class="fee-preview">
-                                <div class="fee-row"><span>Withdrawal Fee (10%)</span><span id="feeDisplay">₦0.00</span></div>
+                                <div class="fee-row"><span id="feeLabel">Withdrawal Fee</span><span id="feeDisplay">₦0.00</span></div>
                                 <div class="fee-row net-receive"><span>You Receive</span><span id="netDisplay">₦0.00</span></div>
                             </div>
 
@@ -213,10 +217,33 @@
         const fmt = (v) => `₦${Number(v).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
         let hasActiveInvestment = false;
+        let withdrawalFeePercent = 12; // fallback only; overwritten by live admin_settings value below
+        let withdrawalsLocked = false;
 
         async function init() {
             const session = await auth.requireAuth();
             if (!session) return;
+
+            // Live platform settings — fee % and lock flag are admin-controlled
+            // via admin/settings.html, not hardcoded.
+            const { data: settingsRows, error: settingsErr } = await supabase
+                .from('admin_settings')
+                .select('key, value')
+                .in('key', ['withdrawal_fee', 'withdrawals_locked']);
+            if (settingsErr) console.error('Settings load error:', settingsErr.message);
+            const settings = Object.fromEntries((settingsRows || []).map(r => [r.key, r.value]));
+            if (isFinite(Number(settings.withdrawal_fee))) withdrawalFeePercent = Number(settings.withdrawal_fee);
+            withdrawalsLocked = settings.withdrawals_locked === true || settings.withdrawals_locked === 'true';
+
+            document.getElementById('feeLabel').textContent = `Withdrawal Fee (${withdrawalFeePercent}%)`;
+
+            const lockedBanner = document.getElementById('withdrawalsLockedBanner');
+            if (withdrawalsLocked) {
+                lockedBanner.style.display = 'block';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            }
 
             // Load Balance — lives on `wallets`, not `profiles`.
             const { data: wallet, error: walletErr } = await supabase.from('wallets').select('available_balance').eq('user_id', session.user.id).single();
@@ -229,7 +256,7 @@
             hasActiveInvestment = (activeInvestments || []).length > 0;
 
             const banner = document.getElementById('noActiveInvestmentBanner');
-            if (!hasActiveInvestment) {
+            if (!hasActiveInvestment && !withdrawalsLocked) {
                 banner.style.display = 'block';
                 submitBtn.disabled = true;
                 submitBtn.style.opacity = '0.5';
@@ -261,7 +288,7 @@
         // Live Fee Preview
         amountInput.addEventListener('input', () => {
             const amt = parseFloat(amountInput.value) || 0;
-            const fee = amt * 0.10;
+            const fee = amt * (withdrawalFeePercent / 100);
             const net = amt - fee;
             feeDisplay.textContent = fmt(fee);
             netDisplay.textContent = fmt(net > 0 ? net : 0);
@@ -274,6 +301,7 @@
             const name = document.getElementById('accName').value;
             const confirmed = document.getElementById('confirmCheck').checked;
 
+            if (withdrawalsLocked) return alert("Withdrawals are temporarily disabled by the administrator.");
             if (!amount || amount < 650) return alert("Minimum ₦650");
             if (!hasActiveInvestment) return alert("You need at least one active investment before you can withdraw.");
             if (!accNum || accNum.length < 10) return alert("Invalid Account Number");
