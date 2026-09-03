@@ -341,11 +341,12 @@
             if (data) {
                 const dest = data.destination_details || {};
                 const body = document.getElementById('modalBody');
+                const feePct = data.amount ? Math.round((data.fee / data.amount) * 100) : 0;
                 body.innerHTML = `
                     <p><b>Reference:</b> ${data.reference}</p>
                     <p><b>User Reference:</b> ${data.user_id}</p>
                     <p><b>Amount Requested:</b> ${formatCurrency(data.amount)}</p>
-                    <p><b>Fee (10%):</b> ${formatCurrency(data.fee)}</p>
+                    <p><b>Fee (${feePct}%):</b> ${formatCurrency(data.fee)}</p>
                     <p style="color:var(--gold-primary); font-size:1rem;"><b>Net Payout: ${formatCurrency(data.net_amount)}</b></p>
                     <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; margin:15px 0;">
                         <p><b>Bank Name:</b> ${dest.bank || 'N/A'}</p>
