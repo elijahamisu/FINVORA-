@@ -138,10 +138,21 @@
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Withdrawal Charge (%)</label>
-                                    <input type="number" id="withdrawFee" class="input-field" value="7">
+                                    <input type="number" id="withdrawFee" class="input-field" value="12">
                                 </div>
                                 <button type="submit" class="btn-save" id="btnWith">SAVE WITHDRAWAL RULES</button>
                             </form>
+                        </div>
+
+                        <!-- Withdrawal Lock -->
+                        <div class="card">
+                            <h2 class="section-title">Withdrawal Access</h2>
+                            <div class="info-row">
+                                <span class="info-label">Platform-wide withdrawals</span>
+                                <span class="info-val" id="lockStatusLabel">---</span>
+                            </div>
+                            <p style="font-size: 0.75rem; color: var(--text-gray); line-height: 1.5; margin: 14px 0 18px;">When locked, no user can submit a withdrawal request anywhere on the platform, regardless of balance or active investments. Use this during maintenance or a liquidity pause.</p>
+                            <button type="button" class="btn-save" id="btnToggleLock">LOAD...</button>
                         </div>
                     </div>
 
@@ -201,6 +212,7 @@
         
         let pendingSaveFn = null;
         let isDirty = false;
+        let currentLockState = false;
 
         async function init() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -214,41 +226,132 @@
         }
 
         async function loadPlatformSettings() {
-            // Logic to fetch from authoritative settings table
-            // For now, UI uses configured platform defaults
+            const { data: rows, error } = await supabase.from('admin_settings').select('key, value');
+            if (error) {
+                console.error('Settings load error:', error.message);
+                alert('Could not load platform settings: ' + error.message);
+                return;
+            }
+            const settings = Object.fromEntries((rows || []).map(r => [r.key, r.value]));
+
+            if (settings.withdrawal_fee !== undefined) document.getElementById('withdrawFee').value = settings.withdrawal_fee;
+            if (settings.ref_l1_percent !== undefined) document.getElementById('refL1').value = settings.ref_l1_percent;
+            if (settings.ref_l2_percent !== undefined) document.getElementById('refL2').value = settings.ref_l2_percent;
+
+            currentLockState = settings.withdrawals_locked === true || settings.withdrawals_locked === 'true';
+            renderLockButton();
+        }
+
+        function renderLockButton() {
+            const label = document.getElementById('lockStatusLabel');
+            const btn = document.getElementById('btnToggleLock');
+            if (currentLockState) {
+                label.textContent = 'LOCKED';
+                label.style.color = 'var(--error)';
+                btn.textContent = 'UNLOCK WITHDRAWALS';
+                btn.style.background = 'transparent';
+                btn.style.border = '1px solid var(--success)';
+                btn.style.color = 'var(--success)';
+            } else {
+                label.textContent = 'OPEN';
+                label.style.color = 'var(--success)';
+                btn.textContent = 'LOCK WITHDRAWALS';
+                btn.style.background = 'transparent';
+                btn.style.border = '1px solid var(--error)';
+                btn.style.color = 'var(--error)';
+            }
+        }
+
+        // Upsert a single admin_settings row. `key` has no confirmed unique
+        // constraint, so this checks existence first rather than relying on
+        // ON CONFLICT.
+        async function saveSetting(key, value) {
+            const { data: existing } = await supabase.from('admin_settings').select('key').eq('key', key).maybeSingle();
+            if (existing) {
+                const { error } = await supabase.from('admin_settings').update({ value, updated_at: new Date().toISOString() }).eq('key', key);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.from('admin_settings').insert([{ key, value, updated_at: new Date().toISOString() }]);
+                if (error) throw error;
+            }
         }
 
         // Form Submit Interceptors
         const handleFinancialSubmit = (e, callback) => {
             e.preventDefault();
             pendingSaveFn = callback;
+            document.getElementById('confirmModal').querySelector('.modal-text').textContent =
+                'You are about to modify a critical financial parameter. This change will affect all future platform calculations. Are you sure you wish to proceed?';
             confirmModal.style.display = 'flex';
         };
 
         document.getElementById('generalForm').onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btnGen');
-            btn.disabled = true;
-            btn.textContent = 'SAVING...';
-            
-            // Authorized update call to api/admin.js (simulated here)
-            setTimeout(() => {
-                btn.disabled = false;
-                btn.textContent = 'SAVE GENERAL';
-                alert("General settings updated.");
-                isDirty = false;
-            }, 1000);
+            // General settings (platform name, support contact) aren't in
+            // admin_settings yet and aren't read anywhere else in the app,
+            // so this stays a placeholder — only Withdrawal Rules, Referral
+            // Program, and the Lock toggle are wired to real data.
+            alert("General settings aren't connected to a live config yet — no changes were saved.");
         };
 
         document.getElementById('withdrawalForm').onsubmit = (e) => handleFinancialSubmit(e, async () => {
-            console.log("Saving financial withdrawal rules...");
-            confirmModal.style.display = 'none';
+            const btn = document.getElementById('btnWith');
+            btn.disabled = true;
+            btn.textContent = 'SAVING...';
+            try {
+                await saveSetting('withdrawal_fee', Number(document.getElementById('withdrawFee').value));
+                confirmModal.style.display = 'none';
+                alert('Withdrawal fee updated. This takes effect immediately for new requests.');
+                isDirty = false;
+            } catch (err) {
+                alert('Could not save: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'SAVE WITHDRAWAL RULES';
+            }
         });
 
         document.getElementById('referralForm').onsubmit = (e) => handleFinancialSubmit(e, async () => {
-            console.log("Saving referral commission structure...");
-            confirmModal.style.display = 'none';
+            const btn = document.getElementById('btnRef');
+            btn.disabled = true;
+            btn.textContent = 'SAVING...';
+            try {
+                await saveSetting('ref_l1_percent', Number(document.getElementById('refL1').value));
+                await saveSetting('ref_l2_percent', Number(document.getElementById('refL2').value));
+                confirmModal.style.display = 'none';
+                alert('Referral commission structure updated.');
+                isDirty = false;
+            } catch (err) {
+                alert('Could not save: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'SAVE COMMISSIONS';
+            }
         });
+
+        document.getElementById('btnToggleLock').onclick = () => {
+            const nextState = !currentLockState;
+            pendingSaveFn = async () => {
+                const btn = document.getElementById('btnToggleLock');
+                btn.disabled = true;
+                try {
+                    await saveSetting('withdrawals_locked', nextState);
+                    currentLockState = nextState;
+                    renderLockButton();
+                    confirmModal.style.display = 'none';
+                    alert(nextState ? 'Withdrawals are now LOCKED platform-wide.' : 'Withdrawals are now OPEN.');
+                } catch (err) {
+                    alert('Could not save: ' + err.message);
+                } finally {
+                    btn.disabled = false;
+                }
+            };
+            document.getElementById('confirmModal').querySelector('.modal-text').textContent =
+                nextState
+                    ? 'This will immediately block every user from submitting a withdrawal request. Are you sure you wish to proceed?'
+                    : 'This will immediately allow users to submit withdrawal requests again. Are you sure you wish to proceed?';
+            confirmModal.style.display = 'flex';
+        };
 
         document.getElementById('confirmSave').onclick = () => {
             if (pendingSaveFn) pendingSaveFn();
