@@ -430,17 +430,27 @@
                     description: 'Deposit confirmed by admin'
                 }]);
 
-                // Two-level referral commission: 20% to the direct (Level 1)
-                // referrer, 5% to that referrer's own referrer (Level 2) —
-                // matching the rates already displayed on referrals.html.
+                // Two-level referral commission — rates are admin-controlled
+                // via admin/settings.html (ref_l1_percent / ref_l2_percent in
+                // admin_settings), not hardcoded, so changing them there
+                // takes effect immediately without a code deploy.
+                const { data: settingsRows, error: settingsErr } = await supabase
+                    .from('admin_settings')
+                    .select('key, value')
+                    .in('key', ['ref_l1_percent', 'ref_l2_percent']);
+                if (settingsErr) console.error('Referral settings load error:', settingsErr.message);
+                const refSettings = Object.fromEntries((settingsRows || []).map(r => [r.key, r.value]));
+                const l1Percent = isFinite(Number(refSettings.ref_l1_percent)) ? Number(refSettings.ref_l1_percent) : 20;
+                const l2Percent = isFinite(Number(refSettings.ref_l2_percent)) ? Number(refSettings.ref_l2_percent) : 5;
+
                 const { data: depositorProfile } = await supabase.from('profiles').select('full_name, referred_by').eq('id', userId).single();
                 if (depositorProfile?.referred_by) {
                     const l1ReferrerId = depositorProfile.referred_by;
-                    await creditReferralCommission(l1ReferrerId, Number(amount) * 0.20, 1, depositorProfile.full_name);
+                    await creditReferralCommission(l1ReferrerId, Number(amount) * (l1Percent / 100), 1, depositorProfile.full_name);
 
                     const { data: l1Profile } = await supabase.from('profiles').select('referred_by').eq('id', l1ReferrerId).single();
                     if (l1Profile?.referred_by) {
-                        await creditReferralCommission(l1Profile.referred_by, Number(amount) * 0.05, 2, depositorProfile.full_name);
+                        await creditReferralCommission(l1Profile.referred_by, Number(amount) * (l2Percent / 100), 2, depositorProfile.full_name);
                     }
                 }
 
