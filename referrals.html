@@ -163,8 +163,8 @@
                 <div class="referral-content">
                     <div>
                         <div class="tabs">
-                            <div class="tab active" data-tab="l1">Level 1 (20%)</div>
-                            <div class="tab" data-tab="l2">Level 2 (5%)</div>
+                            <div class="tab active" data-tab="l1">Level 1 (<span id="l1PercentLabel">20</span>%)</div>
+                            <div class="tab" data-tab="l2">Level 2 (<span id="l2PercentLabelTab">5</span>%)</div>
                             <div class="tab" data-tab="history">History</div>
                         </div>
 
@@ -179,8 +179,8 @@
                         <h2 class="section-title" style="font-size: 1rem;">How it works</h2>
                         <div style="font-size: 0.85rem; color: var(--text-gray); line-height: 1.6;">
                             <p style="margin-bottom: 10px;">1. Share your unique link with friends and family.</p>
-                            <p style="margin-bottom: 10px;">2. Earn <b>20%</b> commission when your Level 1 referrals invest.</p>
-                            <p style="margin-bottom: 10px;">3. Earn <b>5%</b> commission when your Level 2 referrals invest.</p>
+                            <p style="margin-bottom: 10px;">2. Earn <b><span id="l1PercentText">20</span>%</b> commission when your Level 1 referrals invest.</p>
+                            <p style="margin-bottom: 10px;">3. Earn <b><span id="l2PercentText">5</span>%</b> commission when your Level 2 referrals invest.</p>
                             <p>Track all commissions instantly in your history tab.</p>
                         </div>
                         
@@ -219,6 +219,19 @@
         async function init() {
             const session = await auth.requireAuth();
             if (!session) return;
+
+            // Live commission rates — admin-controlled via admin/settings.html
+            // (ref_l1_percent / ref_l2_percent), not hardcoded.
+            const { data: settingsRows, error: settingsErr } = await supabase
+                .from('admin_settings')
+                .select('key, value')
+                .in('key', ['ref_l1_percent', 'ref_l2_percent']);
+            if (settingsErr) console.error('Referral settings load error:', settingsErr.message);
+            const refSettings = Object.fromEntries((settingsRows || []).map(r => [r.key, r.value]));
+            const l1Percent = isFinite(Number(refSettings.ref_l1_percent)) ? Number(refSettings.ref_l1_percent) : 20;
+            const l2Percent = isFinite(Number(refSettings.ref_l2_percent)) ? Number(refSettings.ref_l2_percent) : 5;
+            ['l1PercentLabel', 'l1PercentText'].forEach(id => document.getElementById(id).textContent = l1Percent);
+            ['l2PercentLabelTab', 'l2PercentText'].forEach(id => document.getElementById(id).textContent = l2Percent);
 
             // Fetch Profile
             const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
